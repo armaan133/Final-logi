@@ -19,7 +19,7 @@ export default function VendorDashboard() {
   const { 
     state, addProduct, updateProduct, deleteProduct, restockProduct, 
     assignAgent, autoAssignOrder, upgradeSubscription, refundOrder,
-    toggleSimulationMode
+    toggleSimulationMode, resetState
   } = useLogiTrack();
 
   const [activeTab, setActiveTab] = useState<"analytics" | "products" | "dispatch" | "map" | "billing">("analytics");
@@ -313,10 +313,19 @@ export default function VendorDashboard() {
           </h2>
           <div className="flex items-center gap-4">
             <button
+              onClick={() => {
+                resetState();
+                alert("Demo state successfully reset to initial seed values! Enjoy testing 5 warehouses & 25 agents.");
+              }}
+              className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-950 border border-slate-700 hover:border-slate-600 transition-all text-slate-300 shadow-sm"
+            >
+              Reset Demo Data
+            </button>
+            <button
               onClick={toggleSimulationMode}
               className={`flex items-center gap-2 text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-lg transition-all border ${state.simulationMode ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/15" : "bg-slate-800 hover:bg-slate-700 text-slate-350 border-slate-750"}`}
             >
-              <span className={`w-2 h-2 rounded-full ${state.simulationMode ? "bg-white animate-pulse" : "bg-slate-500"}`} />
+              <span className={`w-2.5 h-2.5 rounded-full ${state.simulationMode ? "bg-white animate-pulse" : "bg-slate-500"}`} />
               Simulator: {state.simulationMode ? "ON" : "OFF"}
             </button>
             <div className="flex items-center gap-2">
