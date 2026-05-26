@@ -173,8 +173,8 @@ const generateHistoricalOrders = (): Order[] => {
         customerName: customerNames[idx],
         customerPhone: "+1 (555) 011-0000",
         address: addresses[addrIdx],
-        lat: 18.52 + (Math.random() - 0.5) * 0.06,
-        lng: 73.85 + (Math.random() - 0.5) * 0.06,
+        lat: Math.random() < 0.65 ? (18.54 + Math.random() * 0.035) : (18.50 + Math.random() * 0.07),
+        lng: Math.random() < 0.65 ? (73.88 + Math.random() * 0.05) : (73.80 + Math.random() * 0.13),
         products: productsList,
         total: parseFloat(total.toFixed(2)),
         status: isReturn ? "returned" : "delivered",
@@ -510,7 +510,7 @@ export const LogiTrackProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       });
     }, 2000);
 
-    // 2. Simulated Order Placement Loop: Trigger every 14 seconds
+    // 2. Simulated Order Placement Loop: Trigger every ~12.17 seconds (increased rate by 15% from 14s)
     const orderGenInterval = setInterval(() => {
       setState(prev => {
         if (!prev.simulationMode) return prev;
@@ -525,9 +525,9 @@ export const LogiTrackProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const address = addresses[Math.floor(Math.random() * addresses.length)];
         const orderId = `ord-${Math.floor(1000 + Math.random() * 9000)}`;
         
-        // Random Pune coords
-        const lat = 18.52 + (Math.random() - 0.5) * 0.06;
-        const lng = 73.85 + (Math.random() - 0.5) * 0.06;
+        // Bias order placement toward North East side (Viman Nagar/Kharadi area)
+        const lat = Math.random() < 0.65 ? (18.54 + Math.random() * 0.035) : (18.50 + Math.random() * 0.07);
+        const lng = Math.random() < 0.65 ? (73.88 + Math.random() * 0.05) : (73.80 + Math.random() * 0.13);
 
         const newOrder: Order = {
           id: orderId,
@@ -592,7 +592,7 @@ export const LogiTrackProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           ]
         };
       });
-    }, 14000);
+    }, 12174);
 
     return () => {
       clearInterval(driveInterval);

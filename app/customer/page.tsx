@@ -39,7 +39,15 @@ export default function CustomerApp() {
   const [returnSuccess, setReturnSuccess] = useState(false);
 
   // Categories
-  const categories = ["All", "Beverages", "Dairy & Alternatives", "Bakery", "Pantry", "Snacks", "Household"];
+  const categories = [
+    { name: "All", image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&q=80" },
+    { name: "Beverages", image: "https://images.unsplash.com/photo-1513530534585-c7b1394c6d51?w=150&q=80" },
+    { name: "Dairy & Alternatives", image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=150&q=80" },
+    { name: "Bakery", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=150&q=80" },
+    { name: "Pantry", image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=150&q=80" },
+    { name: "Snacks", image: "https://images.unsplash.com/photo-1548907040-4d42b52125e0?w=150&q=80" },
+    { name: "Household", image: "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=150&q=80" }
+  ];
 
   // Filter products by category
   const filteredProducts = useMemo(() => {
@@ -306,12 +314,18 @@ export default function CustomerApp() {
               <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
                 {categories.map(cat => (
                   <button
-                    key={cat}
+                    key={cat.name}
                     type="button"
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`store-chip ${selectedCategory === cat ? "is-active" : ""}`}
+                    onClick={() => setSelectedCategory(cat.name)}
+                    className={`store-chip flex items-center gap-2 pl-2 pr-3.5 py-1 ${selectedCategory === cat.name ? "is-active" : ""}`}
                   >
-                    {cat}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      className="w-5 h-5 rounded-full object-cover border border-white/10 shrink-0"
+                    />
+                    <span>{cat.name}</span>
                   </button>
                 ))}
               </div>

@@ -1,26 +1,45 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+// Helper component to reset selection when clicking on the map background
+function MapClickReset({ onReset }: { onReset: () => void }) {
+  useMapEvents({
+    click() {
+      onReset();
+    }
+  });
+  return null;
+}
+
 // Helper to create custom HTML/SVG icons for Leaflet markers
 // Helper to create custom HTML/SVG icons for Leaflet markers
-const createSvgIcon = (color: string, type: "agent" | "order" | "warehouse") => {
+const createSvgIcon = (color: string, type: "agent" | "order" | "warehouse", isSelected?: boolean) => {
   const svg = type === "agent" 
-    ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>`
+    ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><circle cx="18.5" cy="17.5" r="3.5"></circle><circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="15" cy="5" r="1"></circle><path d="M12 17.5V14l-3-3 4-3 2 3h2"></path></svg>`
     : type === "order"
     ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>`
     : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M3 21V10l9-6 9 6v11H3z"></path><path d="M9 21V12h6v9H9z"></path></svg>`;
 
-  const bgBorder = type === "warehouse" ? "border-radius: 8px; border: 2.5px solid #4f46e5; background: #e0e7ff;" : `border-radius: 50%; border: 2px solid ${color}; background: white;`;
+  let bgBorder = "";
+  if (type === "warehouse") {
+    bgBorder = "border-radius: 8px; border: 2.5px solid #4f46e5; background: #e0e7ff;";
+  } else {
+    bgBorder = isSelected 
+      ? `border-radius: 50%; border: 3.5px solid #06b6d4; background: white; box-shadow: 0 0 12px #06b6d4;` 
+      : `border-radius: 50%; border: 2px solid ${color}; background: white;`;
+  }
+
+  const iconColor = type === "warehouse" ? "#4f46e5" : (isSelected ? "#06b6d4" : color);
 
   return L.divIcon({
-    html: `<div style="${bgBorder} color: ${type === "warehouse" ? "#4f46e5" : color}; padding: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);">${svg}</div>`,
+    html: `<div style="${bgBorder} color: ${iconColor}; padding: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);">${svg}</div>`,
     className: "custom-leaflet-icon",
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
+    iconSize: isSelected ? [42, 42] : [36, 36],
+    iconAnchor: isSelected ? [21, 21] : [18, 18],
     popupAnchor: [0, -18]
   });
 };
@@ -56,6 +75,7 @@ interface MapProps {
 
 export default function DeliveryMap({ agents, orders, warehouses, focusLatLng }: MapProps) {
   const [mounted, setMounted] = useState(false);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
   const getJitteredPosition = (lat: number, lng: number, id: string, status: string): [number, number] => {
     if (status !== "available") return [lat, lng];
@@ -101,10 +121,14 @@ export default function DeliveryMap({ agents, orders, warehouses, focusLatLng }:
             [o.lat, o.lng]
           ];
         }
+        const isSelected = selectedAgentId === agent.id;
         return {
           id: `${agent.id}-${o.id}`,
           positions: positions as Array<[number, number]>,
-          color: o.status === "out_for_delivery" ? "#f43f5e" : "#6366f1"
+          isSelected,
+          color: isSelected 
+            ? "#06b6d4" // Neon cyan for selected
+            : o.status === "out_for_delivery" ? "#f43f5e" : "#6366f1"
         };
       }
       return null;
@@ -123,6 +147,8 @@ export default function DeliveryMap({ agents, orders, warehouses, focusLatLng }:
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        <MapClickReset onReset={() => setSelectedAgentId(null)} />
 
         {/* Render Warehouses */}
         {warehouses && warehouses.map(w => (
@@ -148,7 +174,14 @@ export default function DeliveryMap({ agents, orders, warehouses, focusLatLng }:
             <Marker
               key={agent.id}
               position={getJitteredPosition(agent.lat, agent.lng, agent.id, agent.status)}
-              icon={createSvgIcon(agent.status === "busy" ? "#f59e0b" : "#10b981", "agent")}
+              icon={createSvgIcon(
+                agent.status === "busy" ? "#f59e0b" : "#10b981", 
+                "agent",
+                selectedAgentId === agent.id
+              )}
+              eventHandlers={{
+                click: () => setSelectedAgentId(prev => prev === agent.id ? null : agent.id)
+              }}
             >
               <Popup>
                 <div className="p-1 font-sans text-xs">
@@ -192,20 +225,28 @@ export default function DeliveryMap({ agents, orders, warehouses, focusLatLng }:
           })}
 
         {/* Render Route Paths */}
-        {activeRoutes.map((route) => (
-          route && (
+        {activeRoutes.map((route) => {
+          if (!route) return null;
+          const hasSelection = selectedAgentId !== null;
+          const opacity = route.isSelected 
+            ? 1.0 
+            : hasSelection ? 0.15 : 0.7;
+          const weight = route.isSelected ? 6 : 3;
+          const dashArray = route.isSelected ? undefined : "6, 6";
+
+          return (
             <Polyline
               key={route.id}
               positions={route.positions}
               pathOptions={{
                 color: route.color,
-                weight: 4,
-                dashArray: "10, 10",
-                opacity: 0.8
+                weight,
+                dashArray,
+                opacity
               }}
             />
-          )
-        ))}
+          );
+        })}
       </MapContainer>
     </div>
   );

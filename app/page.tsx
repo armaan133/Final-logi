@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   ArrowRight,
@@ -71,6 +72,7 @@ const workspaceCards = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const {
     autoAssignOrder,
     resetState,
@@ -185,6 +187,11 @@ export default function Home() {
 
     if (action.kind === "restock" && action.productId && action.quantity) {
       restockProduct(action.productId, action.quantity);
+      return;
+    }
+
+    if (action.kind === "review" && action.target) {
+      router.push(`/vendor?tab=${action.target}`);
     }
   };
 

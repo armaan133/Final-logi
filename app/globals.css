@@ -390,14 +390,21 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
+    align-self: center;
   }
 
   .store-hero-metrics div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     min-width: 0;
+    min-height: 84px;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-card);
     background: oklch(0.08 0.01 128 / 0.28);
-    padding: 12px;
+    padding: 12px 8px;
   }
 
   .store-hero-metrics span {
@@ -406,15 +413,17 @@
     font-family: var(--font-geist-mono);
     font-size: 24px;
     font-weight: 950;
+    line-height: 1;
   }
 
   .store-hero-metrics p {
-    margin-top: 4px;
+    margin-top: 6px;
     color: var(--logi-muted);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;
+    line-height: 1.2;
   }
 
   .store-panel,

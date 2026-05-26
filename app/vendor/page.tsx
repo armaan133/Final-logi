@@ -247,6 +247,20 @@ export default function VendorDashboard() {
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
+  useEffect(() => {
+    if (hydrated && typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const tabParam = searchParams.get("tab");
+      let targetTab = tabParam;
+      if (targetTab === "customer") {
+        targetTab = "analytics";
+      }
+      if (targetTab && ["analytics", "products", "dispatch", "map", "billing"].includes(targetTab)) {
+        setActiveTab(targetTab as any);
+      }
+    }
+  }, [hydrated]);
+
   if (!hydrated) return null;
 
   return (
@@ -402,7 +416,7 @@ export default function VendorDashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                         <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
                         <YAxis stroke="#94a3b8" fontSize={11} />
-                        <Tooltip contentStyle={{ backgroundColor: "var(--logi-paper)", border: "1px solid var(--logi-rule)", color: "var(--logi-ink)" }} />
+                        <Tooltip cursor={false} contentStyle={{ backgroundColor: "var(--logi-paper)", border: "1px solid var(--logi-rule)", color: "var(--logi-ink)" }} />
                         <Legend />
                         <Line type="monotone" dataKey="revenue" name="Revenue (₹)" stroke="var(--logi-accent)" strokeWidth={2} />
                         <Line type="monotone" dataKey="orders" name="Orders Count" stroke="var(--logi-risk)" strokeWidth={2} />
@@ -420,7 +434,7 @@ export default function VendorDashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                         <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} />
                         <YAxis stroke="#94a3b8" fontSize={11} />
-                        <Tooltip contentStyle={{ backgroundColor: "var(--logi-paper)", border: "1px solid var(--logi-rule)", color: "var(--logi-ink)" }} />
+                        <Tooltip cursor={false} contentStyle={{ backgroundColor: "var(--logi-paper)", border: "1px solid var(--logi-rule)", color: "var(--logi-ink)" }} />
                         <Legend />
                         <Bar dataKey="revenue" name="Sales Revenue (₹)" fill="var(--logi-accent)" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="quantity" name="Units Sold" fill="var(--logi-risk)" radius={[4, 4, 0, 0]} />
