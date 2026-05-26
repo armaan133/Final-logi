@@ -1,0 +1,15 @@
+[
+  {
+    "scope": "app",
+    "project": "LogiTrack",
+    "genre": "modern-minimal",
+    "macrostructure": "Workbench",
+    "designSystem": "design.md",
+    "stamp": "Hallmark - P4 H4 E4 S4 R4 V4",
+    "notes": [
+      "Home, owner, customer, and agent pages share route-green command surfaces.",
+      "Fake phone chrome was reduced to functional mode strips.",
+      "Motion uses one reveal pass plus press/hover feedback with reduced-motion fallback."
+    ]
+  }
+]

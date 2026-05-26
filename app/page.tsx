@@ -1,158 +1,568 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useLogiTrack } from "@/lib/state-store";
-import { Package, Truck, ShoppingBag, BarChart3, Database, Award } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  BarChart3,
+  Boxes,
+  CircleDollarSign,
+  Clock3,
+  Database,
+  MapPinned,
+  Package,
+  PackageCheck,
+  RotateCcw,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
+  Warehouse,
+  Zap,
+} from "lucide-react";
+import { LogisticsScene } from "@/components/LogisticsScene";
+import { OriginalThinkingLoader } from "@/components/OriginalThinkingLoader";
+import { AutopilotControlTower } from "@/components/AutopilotControlTower";
+import type { AutopilotAction } from "@/lib/autopilot-engine";
+import { useLogiTrack, type Order } from "@/lib/state-store";
+
+const activeStatuses: Order["status"][] = [
+  "placed",
+  "confirmed",
+  "dispatched",
+  "out_for_delivery",
+];
+
+const statusLabels: Record<Order["status"], string> = {
+  placed: "Placed",
+  confirmed: "Confirmed",
+  dispatched: "Dispatched",
+  out_for_delivery: "Out for delivery",
+  delivered: "Delivered",
+  failed: "Failed",
+  returned: "Returned",
+};
+
+const workspaceCards = [
+  {
+    href: "/vendor",
+    title: "Owner Console",
+    eyebrow: "Inventory + dispatch",
+    description: "Stock, assignment, forecasting, billing.",
+    icon: BarChart3,
+    accentClass: "text-cyan-200 bg-cyan-300/10 border-cyan-200/[0.18]",
+  },
+  {
+    href: "/agent",
+    title: "Agent Field App",
+    eyebrow: "Driver workflow",
+    description: "Route tasks, status, GPS, payouts.",
+    icon: Truck,
+    accentClass: "text-emerald-200 bg-emerald-300/10 border-emerald-200/[0.18]",
+  },
+  {
+    href: "/customer",
+    title: "Customer Store",
+    eyebrow: "Shopping + tracking",
+    description: "Checkout, tracking, feedback, returns.",
+    icon: ShoppingBag,
+    accentClass: "text-amber-200 bg-amber-300/10 border-amber-200/[0.18]",
+  },
+];
 
 export default function Home() {
-  const { resetState, state, toggleSimulationMode } = useLogiTrack();
+  const {
+    autoAssignOrder,
+    resetState,
+    restockProduct,
+    state,
+    toggleSimulationMode,
+  } = useLogiTrack();
+  const [loaderMounted, setLoaderMounted] = useState(true);
+  const [loaderVisible, setLoaderVisible] = useState(true);
 
-  const totalOrders = state.orders.length;
-  const pendingOrders = state.orders.filter(o => o.status === "placed" || o.status === "confirmed" || o.status === "dispatched" || o.status === "out_for_delivery").length;
-  const activeAgents = state.agents.filter(a => a.status !== "offline").length;
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("skipLoader")) {
+      const skipTimer = window.setTimeout(() => {
+        setLoaderVisible(false);
+        setLoaderMounted(false);
+      }, 0);
+
+      return () => window.clearTimeout(skipTimer);
+    }
+
+    const hideTimer = window.setTimeout(() => setLoaderVisible(false), 900);
+    const removeTimer = window.setTimeout(() => setLoaderMounted(false), 1420);
+
+    return () => {
+      window.clearTimeout(hideTimer);
+      window.clearTimeout(removeTimer);
+    };
+  }, []);
+
+  const activeOrders = useMemo(
+    () => state.orders.filter((order) => activeStatuses.includes(order.status)),
+    [state.orders]
+  );
+
+  const lowStockProducts = useMemo(
+    () => [...state.products].sort((a, b) => a.stock - b.stock).slice(0, 4),
+    [state.products]
+  );
+
+  const recentOrders = useMemo(() => {
+    const visibleOrders = activeOrders.length > 0 ? activeOrders : state.orders;
+    return [...visibleOrders]
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )
+      .slice(0, 5);
+  }, [activeOrders, state.orders]);
+
+  const hubCoverage = useMemo(
+    () =>
+      state.warehouses.map((warehouse) => ({
+        ...warehouse,
+        agents: state.agents.filter((agent) => agent.warehouseId === warehouse.id)
+          .length,
+      })),
+    [state.agents, state.warehouses]
+  );
+
+  const totalRevenue = state.orders
+    .filter((order) => order.paymentStatus === "paid")
+    .reduce((sum, order) => sum + order.total, 0);
+  const activeAgents = state.agents.filter((agent) => agent.status !== "offline").length;
+  const assignedActiveOrders = activeOrders.filter((order) => order.agentId).length;
+  const lowStockAlerts = state.products.filter((product) => product.stock < 10).length;
+  const returnRate =
+    state.orders.length === 0
+      ? 0
+      : Math.round(
+          (state.orders.filter((order) => order.returnRequested).length /
+            state.orders.length) *
+            100
+        );
+  const healthScore = Math.max(68, 100 - lowStockAlerts * 7 - returnRate);
+
+  const statCards = [
+    {
+      label: "Active",
+      value: activeOrders.length,
+      detail: `${assignedActiveOrders} assigned`,
+      icon: MapPinned,
+      tone: "text-cyan-100",
+    },
+    {
+      label: "Agents",
+      value: activeAgents,
+      detail: `${state.warehouses.length} hubs`,
+      icon: Activity,
+      tone: "text-emerald-100",
+    },
+    {
+      label: "Stock",
+      value: lowStockAlerts,
+      detail: "risk SKUs",
+      icon: Zap,
+      tone: "text-amber-100",
+    },
+    {
+      label: "Paid",
+      value: `₹${Math.round(totalRevenue / 1000)}k`,
+      detail: `${returnRate}% returns`,
+      icon: CircleDollarSign,
+      tone: "text-zinc-100",
+    },
+  ];
+
+  const handleAutopilotAction = (action: AutopilotAction) => {
+    if (action.kind === "assign" && action.orderId) {
+      autoAssignOrder(action.orderId);
+      return;
+    }
+
+    if (action.kind === "restock" && action.productId && action.quantity) {
+      restockProduct(action.productId, action.quantity);
+    }
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white overflow-hidden relative font-sans">
-      {/* Background Gradients */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[60%] rounded-full bg-indigo-900/20 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[60%] rounded-full bg-emerald-950/20 blur-[120px] pointer-events-none" />
+    <>
+      {loaderMounted ? <OriginalThinkingLoader isVisible={loaderVisible} /> : null}
 
-      {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
-              <Package className="w-6 h-6 animate-pulse" />
-            </div>
-            <div>
-              <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-400 bg-clip-text text-transparent">LogiTrack</span>
-              <span className="ml-1.5 text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-semibold uppercase tracking-wider border border-indigo-500/20">Hackathon v2.0</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleSimulationMode}
-              className={`flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg transition-all border ${state.simulationMode ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/15" : "bg-slate-800 hover:bg-slate-700 text-slate-350 border-slate-750"}`}
-            >
-              <span className={`w-2.5 h-2.5 rounded-full ${state.simulationMode ? "bg-white animate-pulse" : "bg-slate-500"}`} />
-              Simulated Backend: {state.simulationMode ? "ON" : "OFF"}
-            </button>
-            <button
-              onClick={() => {
-                resetState();
-                alert("Demo state successfully reset to initial seed values!");
-              }}
-              className="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-950 border border-slate-700 hover:border-slate-600 transition-all text-slate-300"
-            >
-              <Database className="w-3.5 h-3.5" />
-              Reset Demo Data
-            </button>
-          </div>
+      <div className="logi-command-page relative min-h-screen overflow-hidden bg-[#090a08] text-zinc-100 selection:bg-emerald-200 selection:text-zinc-950">
+        <div className="absolute inset-0 opacity-70">
+          <LogisticsScene
+            activeDeliveries={activeOrders.length}
+            onlineAgents={activeAgents}
+          />
         </div>
-      </header>
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#090a08_0%,rgba(9,10,8,0.92)_42%,rgba(9,10,8,0.64)_100%),linear-gradient(180deg,rgba(9,10,8,0.2),#090a08_90%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(244,244,245,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(244,244,245,0.025)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:linear-gradient(to_bottom,black,transparent_78%)]" />
 
-      {/* Main Content */}
-      <main className="flex-grow max-w-7xl mx-auto px-6 py-12 flex flex-col justify-center relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-6 bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent leading-tight">
-            Smart Supply Chain & <br />
-            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Delivery Management</span>
-          </h1>
-          <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">
-            LogiTrack integrates all logistics workflows—from product catalogs, demand forecasting, and agent routing to sandbox payments and customer maps.
-          </p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto w-full mb-12">
-          <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-center">
-            <div className="text-2xl font-bold text-white">{totalOrders}</div>
-            <div className="text-xs text-slate-400 mt-1">Total System Orders</div>
-          </div>
-          <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-center">
-            <div className="text-2xl font-bold text-indigo-400">{pendingOrders}</div>
-            <div className="text-xs text-slate-400 mt-1">Active Deliveries</div>
-          </div>
-          <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-center">
-            <div className="text-2xl font-bold text-emerald-400">{activeAgents}</div>
-            <div className="text-xs text-slate-400 mt-1">Online Agents</div>
-          </div>
-          <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800 text-center">
-            <div className="text-2xl font-bold text-pink-400">{state.products.filter(p => p.stock < 10).length}</div>
-            <div className="text-xs text-slate-400 mt-1">Low Stock Alerts</div>
-          </div>
-        </div>
-
-        {/* Portals Selector */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto w-full">
-          {/* Business Owner */}
-          <Link href="/vendor" className="group h-full">
-            <div className="h-full p-8 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform mb-6 border border-indigo-500/20">
-                  <BarChart3 className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-indigo-400 transition-colors">Business Owner Portal</h3>
-                <p className="text-sm text-slate-400 leading-relaxed mb-6">
-                  Manage inventory, add products, dispatch incoming orders with AI auto-assign, track optimization maps, and review sales forecasting reports.
+        <header className="logi-command-topbar relative z-20 border-b border-white/10 bg-[#090a08]/[0.82] backdrop-blur-xl">
+          <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="grid size-9 shrink-0 place-items-center rounded-lg border border-emerald-200/20 bg-emerald-200/10 text-emerald-100">
+                <Package className="size-[18px]" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black tracking-tight text-white sm:text-base">
+                  LogiTrack
+                </p>
+                <p className="hidden text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 sm:block">
+                  Local demo operations
                 </p>
               </div>
-              <div className="text-xs font-semibold text-indigo-400 flex items-center gap-1.5 group-hover:translate-x-1.5 transition-transform">
-                Open Dashboard &rarr;
-              </div>
             </div>
-          </Link>
 
-          {/* Delivery Agent */}
-          <Link href="/agent" className="group h-full">
-            <div className="h-full p-8 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform mb-6 border border-emerald-500/20">
-                  <Truck className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-emerald-400 transition-colors">Delivery Agent App</h3>
-                <p className="text-sm text-slate-400 leading-relaxed mb-6 text-balance">
-                  Mobile-responsive list. Update delivery status, simulate live GPS coordinates, track daily completed tasks, and view earned payouts.
-                </p>
-              </div>
-              <div className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5 group-hover:translate-x-1.5 transition-transform">
-                Open Agent View &rarr;
-              </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleSimulationMode}
+                className={`pressable inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-[11px] font-black uppercase tracking-[0.1em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/[0.7] ${
+                  state.simulationMode
+                    ? "border-emerald-200/30 bg-emerald-200 text-zinc-950"
+                    : "border-white/10 bg-white/[0.055] text-zinc-400"
+                }`}
+              >
+                <span
+                  className={`size-2 rounded-full ${
+                    state.simulationMode ? "bg-zinc-950" : "bg-zinc-600"
+                  }`}
+                />
+                <span className="hidden sm:inline">Simulation</span>
+                {state.simulationMode ? "On" : "Off"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  resetState();
+                }}
+                className="pressable inline-flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.055] px-3 text-[11px] font-black uppercase tracking-[0.1em] text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/[0.7]"
+              >
+                <RotateCcw className="size-3.5" />
+                <span className="hidden sm:inline">Reset</span>
+              </button>
             </div>
-          </Link>
-
-          {/* Customer */}
-          <Link href="/customer" className="group h-full">
-            <div className="h-full p-8 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 hover:border-pink-500/50 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-300 flex flex-col justify-between">
-              <div>
-                <div className="w-12 h-12 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center group-hover:scale-110 transition-transform mb-6 border border-pink-500/20">
-                  <ShoppingBag className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2 group-hover:text-pink-400 transition-colors">Customer Store</h3>
-                <p className="text-sm text-slate-400 leading-relaxed mb-6">
-                  Browse organic products, mock checkout with simulated sandbox payment, track orders in real time, watch live driver progress on map, and raise returns.
-                </p>
-              </div>
-              <div className="text-xs font-semibold text-pink-400 flex items-center gap-1.5 group-hover:translate-x-1.5 transition-transform">
-                Open Shop &rarr;
-              </div>
-            </div>
-          </Link>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-8 relative z-10 text-center text-xs text-slate-600">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-1">
-            <Award className="w-4 h-4 text-indigo-500" />
-            <span>DevFusion Hackathon 2.0 Project Entry</span>
           </div>
-          <div>
-            <span>Double click portals to test side-by-side on your monitor</span>
-          </div>
-        </div>
-      </footer>
-    </div>
+        </header>
+
+        <main className="relative z-10 mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-7">
+          <section className="grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)_330px]">
+            <aside className="reveal-item ops-panel h-fit p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Start here
+                  </p>
+                  <h1 className="mt-2 text-2xl font-black tracking-tight text-white">
+                    Choose a workspace
+                  </h1>
+                </div>
+                <span className="signal-dot mt-2 bg-emerald-300" />
+              </div>
+
+              <div className="mt-5 grid gap-2">
+                {workspaceCards.map((workspace, index) => {
+                  const Icon = workspace.icon;
+                  const metric =
+                    index === 0
+                      ? `${lowStockAlerts} stock risks`
+                      : index === 1
+                        ? `${activeAgents} online`
+                        : `${state.products.length} products`;
+
+                  return (
+                    <Link
+                      key={workspace.href}
+                      href={workspace.href}
+                      className="workspace-entry group/link reveal-item"
+                      style={{ animationDelay: `${120 + index * 65}ms` }}
+                    >
+                      <div
+                        className={`grid size-10 shrink-0 place-items-center rounded-lg border ${workspace.accentClass}`}
+                      >
+                        <Icon className="size-[18px]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-sm font-black text-zinc-100">
+                            {workspace.title}
+                          </p>
+                          <ArrowRight className="size-3.5 shrink-0 text-zinc-500 transition-transform group-hover/link:translate-x-0.5" />
+                        </div>
+                        <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">
+                          {workspace.eyebrow}
+                        </p>
+                        <p className="mt-2 text-xs leading-5 text-zinc-400">
+                          {workspace.description}
+                        </p>
+                        <p className="mt-2 text-[11px] font-bold text-zinc-500">
+                          {metric}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </aside>
+
+            <div className="grid gap-4">
+              <div className="reveal-item ops-panel p-4 sm:p-5 [animation-delay:180ms]">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                      Overview
+                    </p>
+                    <h2 className="mt-2 text-xl font-black tracking-tight text-white">
+                      Current operating board
+                    </h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-400">
+                      A compact snapshot of routing, warehouse coverage, stock
+                      pressure, and customer activity in the local demo state.
+                    </p>
+                  </div>
+
+                  <div className="min-w-48 rounded-lg border border-white/10 bg-black/20 p-3">
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.16em] text-zinc-500">
+                      <span>Health</span>
+                      <ShieldCheck className="size-3.5 text-emerald-200" />
+                    </div>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.08]">
+                      <div
+                        className="h-full rounded-full bg-emerald-200 transition-[width] duration-500"
+                        style={{ width: `${healthScore}%` }}
+                      />
+                    </div>
+                    <div className="mt-2 flex items-center justify-between text-xs text-zinc-500">
+                      <span>{state.orders.length} orders</span>
+                      <span>{state.products.length} SKUs</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-2 sm:grid-cols-4">
+                  {statCards.map((stat) => {
+                    const Icon = stat.icon;
+
+                    return (
+                      <div key={stat.label} className="quiet-stat">
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-zinc-500">
+                          <Icon className="size-3.5" />
+                          {stat.label}
+                        </div>
+                        <div className={`mt-2 text-2xl font-black tabular-nums ${stat.tone}`}>
+                          {stat.value}
+                        </div>
+                        <div className="mt-1 text-[11px] text-zinc-600">
+                          {stat.detail}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="reveal-item [animation-delay:220ms]">
+                <AutopilotControlTower
+                  state={state}
+                  compact
+                  onAction={handleAutopilotAction}
+                />
+              </div>
+
+              <div className="reveal-item ops-panel p-4 sm:p-5 [animation-delay:260ms]">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-black tracking-tight text-white">
+                      Dispatch Pipeline
+                    </h2>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Orders grouped by the next handoff.
+                    </p>
+                  </div>
+                  <Truck className="size-5 text-zinc-400" />
+                </div>
+
+                <div className="mt-5 grid gap-2 sm:grid-cols-4">
+                  {activeStatuses.map((status, index) => {
+                    const count = state.orders.filter(
+                      (order) => order.status === status
+                    ).length;
+                    return (
+                      <div key={status} className="pipeline-step">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
+                            0{index + 1}
+                          </span>
+                          <span className="text-lg font-black tabular-nums text-white">
+                            {count}
+                          </span>
+                        </div>
+                        <p className="mt-4 min-h-8 text-xs font-bold leading-4 text-zinc-300">
+                          {statusLabels[status]}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+                <div className="reveal-item ops-panel p-4 sm:p-5 [animation-delay:340ms]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm font-black tracking-tight text-white">
+                        Inventory Watch
+                      </h2>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Lowest stock products.
+                      </p>
+                    </div>
+                    <Boxes className="size-5 text-zinc-400" />
+                  </div>
+
+                  <div className="mt-4 grid gap-3">
+                    {lowStockProducts.map((product) => (
+                      <div key={product.id} className="inventory-row">
+                        <PackageCheck className="size-4 text-zinc-500" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="truncate text-sm font-bold text-zinc-200">
+                              {product.name}
+                            </p>
+                            <span className="text-sm font-black tabular-nums text-amber-100">
+                              {product.stock}
+                            </span>
+                          </div>
+                          <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.08]">
+                            <div
+                              className="h-full rounded-full bg-amber-200"
+                              style={{
+                                width: `${Math.min(100, Math.max(8, product.stock * 3))}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="reveal-item ops-panel p-4 sm:p-5 [animation-delay:420ms]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm font-black tracking-tight text-white">
+                        Hub Coverage
+                      </h2>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        Agent spread across fulfillment points.
+                      </p>
+                    </div>
+                    <Warehouse className="size-5 text-zinc-400" />
+                  </div>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    {hubCoverage.map((hub) => (
+                      <div key={hub.id} className="hub-row">
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-black text-zinc-200">
+                            {hub.name}
+                          </p>
+                          <p className="mt-1 text-[11px] text-zinc-600">
+                            {hub.lat.toFixed(2)}, {hub.lng.toFixed(2)}
+                          </p>
+                        </div>
+                        <span className="text-sm font-black tabular-nums text-emerald-100">
+                          {hub.agents}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <aside className="grid content-start gap-4">
+              <div className="reveal-item ops-panel p-4 sm:p-5 [animation-delay:300ms]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-black text-white">Order Feed</h2>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Recent activity.
+                    </p>
+                  </div>
+                  <Clock3 className="size-5 text-zinc-400" />
+                </div>
+
+                <div className="mt-4 grid gap-2">
+                  {recentOrders.map((order) => (
+                    <div key={order.id} className="order-row">
+                      <div className="min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="truncate text-sm font-black text-zinc-200">
+                            {order.customerName}
+                          </p>
+                          <span className="shrink-0 font-mono text-xs text-zinc-500">
+                            ₹{Math.round(order.total)}
+                          </span>
+                        </div>
+                        <p className="mt-1 truncate text-xs text-zinc-500">
+                          {order.address}
+                        </p>
+                        <div className="mt-3 flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-emerald-100">
+                            {statusLabels[order.status]}
+                          </span>
+                          <span className="font-mono text-zinc-600">
+                            {order.id.replace("ord-", "#")}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="reveal-item ops-panel p-4 sm:p-5 [animation-delay:380ms]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-black text-white">Data Store</h2>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Browser session state.
+                    </p>
+                  </div>
+                  <Database className="size-5 text-zinc-400" />
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="quiet-stat">
+                    <p className="text-[11px] font-bold text-zinc-500">Orders</p>
+                    <p className="mt-1 text-xl font-black text-white">{state.orders.length}</p>
+                  </div>
+                  <div className="quiet-stat">
+                    <p className="text-[11px] font-bold text-zinc-500">Products</p>
+                    <p className="mt-1 text-xl font-black text-white">{state.products.length}</p>
+                  </div>
+                  <div className="quiet-stat">
+                    <p className="text-[11px] font-bold text-zinc-500">Agents</p>
+                    <p className="mt-1 text-xl font-black text-white">{state.agents.length}</p>
+                  </div>
+                  <div className="quiet-stat">
+                    <p className="text-[11px] font-bold text-zinc-500">Plan</p>
+                    <p className="mt-1 text-xl font-black capitalize text-white">
+                      {state.subscription.tier}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </>
   );
 }

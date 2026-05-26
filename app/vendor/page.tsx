@@ -3,13 +3,15 @@
 import React, { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useLogiTrack, Product, Order } from "@/lib/state-store";
+import { AutopilotControlTower } from "@/components/AutopilotControlTower";
+import type { AutopilotAction } from "@/lib/autopilot-engine";
+import { useLogiTrack, Product } from "@/lib/state-store";
 import { 
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
 } from "recharts";
 import { 
-  LayoutDashboard, ShoppingBag, Send, MapPin, CreditCard, Plus, Edit2, Trash2, 
-  AlertTriangle, RefreshCw, Sparkles, TrendingUp, Users, Package, Compass, CheckCircle2, ChevronRight
+  LayoutDashboard, ShoppingBag, Send, CreditCard, Plus, Edit2, Trash2,
+  AlertTriangle, Sparkles, TrendingUp, Users, Package, Compass, CheckCircle2, ChevronRight
 } from "lucide-react";
 
 // Dynamically import map to prevent SSR Leaflet errors
@@ -17,8 +19,8 @@ const DeliveryMap = dynamic(() => import("@/components/DeliveryMap"), { ssr: fal
 
 export default function VendorDashboard() {
   const { 
-    state, addProduct, updateProduct, deleteProduct, restockProduct, 
-    assignAgent, autoAssignOrder, upgradeSubscription, refundOrder,
+    state, addProduct, updateProduct, deleteProduct, restockProduct,
+    assignAgent, autoAssignOrder, upgradeSubscription,
     toggleSimulationMode, resetState
   } = useLogiTrack();
 
@@ -224,18 +226,33 @@ export default function VendorDashboard() {
     return state.agents.filter(a => a.status !== "offline");
   }, [state.agents]);
 
+  const handleAutopilotAction = (action: AutopilotAction) => {
+    if (action.kind === "assign" && action.orderId) {
+      autoAssignOrder(action.orderId);
+    }
+
+    if (action.kind === "restock" && action.productId && action.quantity) {
+      restockProduct(action.productId, action.quantity);
+    }
+
+    if (action.target === "dispatch") setActiveTab("dispatch");
+    if (action.target === "products") setActiveTab("products");
+    if (action.target === "billing") setActiveTab("billing");
+  };
+
   // SSG safe hydration check
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    setHydrated(true);
+    const frame = window.requestAnimationFrame(() => setHydrated(true));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   if (!hydrated) return null;
 
   return (
-    <div className="flex min-h-screen bg-slate-900 text-slate-100 font-sans">
+    <div className="logi-command-page flex min-h-screen text-slate-100 font-sans">
       {/* Sidebar Navigation */}
-      <aside className="w-64 border-r border-slate-800 bg-slate-950 flex flex-col justify-between shrink-0">
+      <aside className="logi-command-sidebar w-64 border-r border-slate-800 bg-slate-950 flex flex-col justify-between shrink-0">
         <div>
           <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800">
             <div className="p-1.5 rounded-lg bg-indigo-500 text-white">
@@ -306,8 +323,8 @@ export default function VendorDashboard() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-h-screen overflow-y-auto">
-        <header className="h-16 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between px-8 sticky top-0 z-40">
+      <main className="logi-command-main flex-1 flex flex-col min-h-screen overflow-y-auto">
+        <header className="logi-command-topbar h-16 border-b border-slate-800 bg-slate-900/60 backdrop-blur flex items-center justify-between px-8 sticky top-0 z-40">
           <h2 className="text-xl font-bold tracking-tight text-white capitalize">
             {activeTab === "analytics" ? "Analytics & AI Insights" : activeTab === "map" ? "Route Optimization Map" : activeTab}
           </h2>
@@ -315,7 +332,6 @@ export default function VendorDashboard() {
             <button
               onClick={() => {
                 resetState();
-                alert("Demo state successfully reset to initial seed values! Enjoy testing 5 warehouses & 25 agents.");
               }}
               className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-950 border border-slate-700 hover:border-slate-600 transition-all text-slate-300 shadow-sm"
             >
@@ -339,6 +355,11 @@ export default function VendorDashboard() {
           {/* TAB 1: ANALYTICS & AI */}
           {activeTab === "analytics" && (
             <div className="space-y-8">
+              <AutopilotControlTower
+                state={state}
+                onAction={handleAutopilotAction}
+              />
+
               {/* Stat Cards */}
               <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="p-6 rounded-xl bg-slate-950 border border-slate-800">
@@ -371,38 +392,38 @@ export default function VendorDashboard() {
               </div>
 
               {/* Charts Grid */}
-              <div className="grid lg:grid-cols-2 gap-8">
+              <div className="grid min-w-0 lg:grid-cols-2 gap-8">
                 {/* Chart 1: Revenue Trends */}
-                <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                <div className="min-w-0 p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
                   <h3 className="text-sm font-bold text-slate-300">Revenue & Order Trends (Last 7 Days)</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <div className="min-w-0 h-64">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                       <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                         <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} />
                         <YAxis stroke="#94a3b8" fontSize={11} />
-                        <Tooltip contentStyle={{ backgroundColor: "#020617", border: "1px solid #1e293b", color: "#f8fafc" }} />
+                        <Tooltip contentStyle={{ backgroundColor: "var(--logi-paper)", border: "1px solid var(--logi-rule)", color: "var(--logi-ink)" }} />
                         <Legend />
-                        <Line type="monotone" dataKey="revenue" name="Revenue (₹)" stroke="#6366f1" strokeWidth={2} />
-                        <Line type="monotone" dataKey="orders" name="Orders Count" stroke="#10b981" strokeWidth={2} />
+                        <Line type="monotone" dataKey="revenue" name="Revenue (₹)" stroke="var(--logi-accent)" strokeWidth={2} />
+                        <Line type="monotone" dataKey="orders" name="Orders Count" stroke="var(--logi-risk)" strokeWidth={2} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
                 {/* Chart 2: Product sales */}
-                <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
+                <div className="min-w-0 p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
                   <h3 className="text-sm font-bold text-slate-300">Top 5 Products by Revenue</h3>
-                  <div className="h-64">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <div className="min-w-0 h-64">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                       <BarChart data={topProductsData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                         <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} />
                         <YAxis stroke="#94a3b8" fontSize={11} />
-                        <Tooltip contentStyle={{ backgroundColor: "#020617", border: "1px solid #1e293b", color: "#f8fafc" }} />
+                        <Tooltip contentStyle={{ backgroundColor: "var(--logi-paper)", border: "1px solid var(--logi-rule)", color: "var(--logi-ink)" }} />
                         <Legend />
-                        <Bar dataKey="revenue" name="Sales Revenue (₹)" fill="#a855f7" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="quantity" name="Units Sold" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="revenue" name="Sales Revenue (₹)" fill="var(--logi-accent)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="quantity" name="Units Sold" fill="var(--logi-risk)" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -775,8 +796,7 @@ export default function VendorDashboard() {
           {activeTab === "billing" && (
             <div className="max-w-4xl mx-auto space-y-8">
               <div className="p-8 rounded-2xl bg-gradient-to-b from-slate-950 to-slate-900 border border-slate-850 relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-                {/* Background effect */}
-                <div className="absolute right-0 top-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute inset-x-8 top-0 h-px bg-emerald-200/20 pointer-events-none" />
 
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-indigo-400 px-2 py-0.5 rounded bg-indigo-500/10 uppercase tracking-wider border border-indigo-500/20">Current Tier</span>

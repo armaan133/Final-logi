@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useLogiTrack, Order, Agent } from "@/lib/state-store";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useLogiTrack, Order } from "@/lib/state-store";
+import { generateAgentNextAction } from "@/lib/autopilot-engine";
 import { 
-  Truck, MapPin, CheckCircle, Navigation, DollarSign, UserCheck, 
-  Map, Phone, Smartphone, ClipboardList, AlertCircle, RefreshCcw
+  Truck, MapPin, Navigation, DollarSign,
+  Phone, Smartphone, ClipboardList, AlertCircle, RefreshCcw
 } from "lucide-react";
 import Link from "next/link";
 
@@ -12,7 +13,6 @@ export default function AgentDashboard() {
   const { state, updateOrderStatus, updateAgentLocation, updateAgentStatus, simulatePayout } = useLogiTrack();
 
   const [selectedAgentId, setSelectedAgentId] = useState<string>("a1");
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [isSimulatingRoute, setIsSimulatingRoute] = useState(false);
   
   const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -34,6 +34,10 @@ export default function AgentDashboard() {
   ).length;
 
   const currentActiveOrder = assignedOrders[0];
+  const nextAction = useMemo(
+    () => generateAgentNextAction(state, selectedAgentId),
+    [state, selectedAgentId]
+  );
 
   // Handle agent status toggle
   const toggleOnlineOffline = () => {
@@ -55,6 +59,29 @@ export default function AgentDashboard() {
     // Stop simulation if job ends
     if (action === "deliver" || action === "fail" || action === "return") {
       stopRouteSimulation();
+    }
+  };
+
+  const runNextAction = () => {
+    if (currentAgent.status === "offline") {
+      toggleOnlineOffline();
+      return;
+    }
+
+    if (!currentActiveOrder) return;
+
+    if (currentActiveOrder.status === "confirmed") {
+      handleStatusTransition(currentActiveOrder.id, currentActiveOrder.status, "dispatch");
+      return;
+    }
+
+    if (currentActiveOrder.status === "dispatched") {
+      handleStatusTransition(currentActiveOrder.id, currentActiveOrder.status, "out");
+      return;
+    }
+
+    if (currentActiveOrder.status === "out_for_delivery") {
+      startRouteSimulation();
     }
   };
 
@@ -102,7 +129,10 @@ export default function AgentDashboard() {
 
   // Handle ref for simulation coordinates updates since state is synced
   const updateAgentLocationRef = useRef(updateAgentLocation);
-  updateAgentLocationRef.current = updateAgentLocation;
+
+  useEffect(() => {
+    updateAgentLocationRef.current = updateAgentLocation;
+  }, [updateAgentLocation]);
 
   useEffect(() => {
     if (isSimulatingRoute && currentActiveOrder && currentAgent) {
@@ -130,7 +160,7 @@ export default function AgentDashboard() {
       
       return () => clearInterval(interval);
     }
-  }, [isSimulatingRoute, currentActiveOrder, currentAgent?.id, currentAgent?.lat, currentAgent?.lng]);
+  }, [isSimulatingRoute, currentActiveOrder, currentAgent]);
 
   // Clean intervals on unmount
   useEffect(() => {
@@ -140,23 +170,17 @@ export default function AgentDashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans relative">
-      {/* Background radial highlight */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] max-w-lg rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none" />
+    <div className="logi-mobile-stage logi-agent-stage min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans relative">
+      <div className="logi-stage-grid" />
 
-      {/* Mock Phone Wrapper Container */}
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-[40px] shadow-2xl flex flex-col overflow-hidden relative" style={{ minHeight: "780px" }}>
+      {/* Field workspace container */}
+      <div className="logi-phone-shell logi-agent-shell w-full max-w-md bg-slate-900 border border-slate-800 rounded-[28px] shadow-2xl flex flex-col overflow-hidden relative" style={{ minHeight: "780px" }}>
         
-        {/* Phone Notch/Status Bar */}
-        <div className="h-10 bg-slate-950 flex items-center justify-between px-8 select-none border-b border-slate-900/60 relative">
-          <div className="w-16 h-4.5 rounded-full bg-slate-900 absolute left-1/2 -translate-x-1/2 top-2 flex items-center justify-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-800" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-400 font-mono">15:08</span>
+        <div className="logi-mobile-strip h-10 flex items-center justify-between px-4 select-none border-b border-slate-900/60 relative shrink-0">
+          <span className="text-[10px] font-black uppercase tracking-[0.18em]">Field mode</span>
           <div className="flex items-center gap-1.5 text-slate-400">
             <Smartphone className="w-3.5 h-3.5" />
-            <span className="text-[9px] font-bold">5G</span>
-            <div className="w-5 h-2.5 rounded-sm border border-slate-400 p-0.5 flex items-center justify-start"><div className="w-3 h-full bg-slate-400 rounded-2xs" /></div>
+            <span className="text-[9px] font-bold">{assignedOrders.length} active jobs</span>
           </div>
         </div>
 
@@ -192,7 +216,7 @@ export default function AgentDashboard() {
         </header>
 
         {/* Dashboard Content Panel */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="logi-mobile-content flex-1 overflow-y-auto p-4 space-y-4">
           
           {/* Agent Status banner */}
           <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850 flex items-center justify-between shadow-sm">
@@ -212,10 +236,32 @@ export default function AgentDashboard() {
             </button>
           </div>
 
+          <div className="agent-action-card">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">
+                Agent Copilot
+              </p>
+              <h3>{nextAction.title}</h3>
+              <p>{nextAction.summary}</p>
+            </div>
+            <div className="agent-action-confidence">
+              <span>{nextAction.confidence}%</span>
+              <small>confidence</small>
+            </div>
+            <ul>
+              {nextAction.checklist.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <button type="button" onClick={runNextAction}>
+              {nextAction.actionLabel}
+            </button>
+          </div>
+
           {/* Active Order Card */}
           {currentActiveOrder ? (
             <div className="p-5 rounded-2xl bg-slate-950 border border-indigo-500/40 space-y-4 relative overflow-hidden">
-              <div className="absolute right-0 top-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl pointer-events-none" />
+              <div className="absolute inset-x-5 top-0 h-px bg-emerald-200/25 pointer-events-none" />
               
               <div className="flex justify-between items-start">
                 <span className="text-[9px] font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded uppercase tracking-wider">
@@ -389,10 +435,7 @@ export default function AgentDashboard() {
 
         </div>
 
-        {/* Simulated Phone Bar Footer */}
-        <div className="h-5 bg-slate-950 flex items-center justify-center pb-2.5">
-          <div className="w-28 h-1 rounded-full bg-slate-800" />
-        </div>
+        <div className="h-3 shrink-0 border-t border-white/[0.06] bg-black/20" />
       </div>
     </div>
   );

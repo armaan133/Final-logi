@@ -5,11 +5,13 @@ import { LogiTrackProvider } from "@/lib/state-store";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
+  display: "swap",
   subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  display: "swap",
   subsets: ["latin"],
 });
 
@@ -26,9 +28,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
+      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900 dark:bg-black dark:text-zinc-50">
+      <body className="min-h-full flex flex-col bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-50">
         <LogiTrackProvider>{children}</LogiTrackProvider>
       </body>
     </html>

@@ -3,9 +3,10 @@
 import React, { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useLogiTrack, Product, Order } from "@/lib/state-store";
+import { generateCustomerPromise } from "@/lib/autopilot-engine";
 import { 
-  ShoppingBag, Trash2, MapPin, CreditCard, Star, RefreshCw, 
-  ChevronRight, ArrowLeft, Check, CheckCircle2, ShieldAlert, Phone, Truck, Play
+  ShoppingBag, Trash2, MapPin, CreditCard, Star, Search,
+  ArrowLeft, Check, CheckCircle2, ShieldAlert, Truck, Play
 } from "lucide-react";
 import Link from "next/link";
 
@@ -17,6 +18,7 @@ export default function CustomerApp() {
 
   const [activeTab, setActiveTab] = useState<"shop" | "cart" | "tracking" | "history">("shop");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [productQuery, setProductQuery] = useState("");
   const [cart, setCart] = useState<Array<{ product: Product; quantity: number }>>([]);
   const [customerName, setCustomerName] = useState("Aditi Gokhale");
   const [customerPhone, setCustomerPhone] = useState("+91 95450 12345");
@@ -24,7 +26,6 @@ export default function CustomerApp() {
   const [lat, setLat] = useState(18.5308);
   const [lng, setLng] = useState(73.8313);
 
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [showSandboxModal, setShowSandboxModal] = useState(false);
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
 
@@ -42,9 +43,18 @@ export default function CustomerApp() {
 
   // Filter products by category
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === "All") return state.products;
-    return state.products.filter(p => p.category === selectedCategory);
-  }, [state.products, selectedCategory]);
+    return state.products.filter(p => {
+      const matchesCategory = selectedCategory === "All" || p.category === selectedCategory;
+      const query = productQuery.trim().toLowerCase();
+      const matchesQuery =
+        query.length === 0 ||
+        p.name.toLowerCase().includes(query) ||
+        p.category.toLowerCase().includes(query) ||
+        p.sku.toLowerCase().includes(query);
+
+      return matchesCategory && matchesQuery;
+    });
+  }, [state.products, selectedCategory, productQuery]);
 
   // Cart logic
   const addToCart = (product: Product) => {
@@ -97,6 +107,14 @@ export default function CustomerApp() {
     return parseFloat(cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0).toFixed(2));
   }, [cart]);
 
+  const cartItemCount = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }, [cart]);
+  const customerPromise = useMemo(
+    () => generateCustomerPromise(state, cart, lat, lng),
+    [state, cart, lat, lng]
+  );
+
   // Place order flow
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,6 +163,15 @@ export default function CustomerApp() {
     );
   }, [state.orders, customerName]);
 
+  const activeCustomerOrders = useMemo(() => {
+    return state.orders.filter(o =>
+      o.customerName === customerName &&
+      o.status !== "delivered" &&
+      o.status !== "failed" &&
+      o.status !== "returned"
+    );
+  }, [state.orders, customerName]);
+
   // Status index for tracking vertical stepper progress
   const getStatusIndex = (status: Order["status"]) => {
     const statuses: Order["status"][] = ["placed", "confirmed", "dispatched", "out_for_delivery", "delivered"];
@@ -179,493 +206,499 @@ export default function CustomerApp() {
   // SSG Hydration check
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    setHydrated(true);
+    const frame = window.requestAnimationFrame(() => setHydrated(true));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   if (!hydrated) return null;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 font-sans relative">
-      {/* Background radial highlight */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] max-w-lg rounded-full bg-pink-500/5 blur-[120px] pointer-events-none" />
+    <div className="logi-store-page min-h-screen bg-slate-950 text-slate-100 font-sans relative">
+      <div className="logi-stage-grid" />
 
-      {/* Mock Phone Wrapper Container */}
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-[40px] shadow-2xl flex flex-col overflow-hidden relative" style={{ minHeight: "780px" }}>
-        
-        {/* Phone Notch/Status Bar */}
-        <div className="h-10 bg-slate-950 flex items-center justify-between px-8 select-none border-b border-slate-900/60 relative shrink-0">
-          <div className="w-16 h-4.5 rounded-full bg-slate-900 absolute left-1/2 -translate-x-1/2 top-2 flex items-center justify-center">
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-800" />
-          </div>
-          <span className="text-[10px] font-bold text-slate-400 font-mono">15:08</span>
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span className="text-[9px] font-bold">LTE</span>
-            <div className="w-5 h-2.5 rounded-sm border border-slate-400 p-0.5 flex items-center justify-start"><div className="w-3 h-full bg-slate-400 rounded-2xs" /></div>
-          </div>
-        </div>
-
-        {/* App Navigation Header */}
-        <header className="p-4 bg-slate-900 border-b border-slate-850 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-pink-500 text-slate-950 font-black">
-              <ShoppingBag className="w-4 h-4" />
+      <header className="store-topbar sticky top-0 z-40 border-b border-slate-800">
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-pink-500 text-slate-950">
+              <ShoppingBag className="size-4" />
             </div>
-            <span className="font-bold text-sm text-slate-200">LogiTrack Store</span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black text-white">LogiTrack Store</p>
+              <p className="hidden text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 sm:block">
+                Customer delivery workspace
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveTab("history")}
-              className={`text-[10px] font-bold px-2 py-1 rounded transition-colors ${activeTab === "history" ? "bg-pink-500/10 text-pink-400" : "text-slate-400 hover:text-slate-200"}`}
-            >
-              My Orders
-            </button>
-            <Link 
-              href="/"
-              className="text-[9px] bg-slate-800 hover:bg-slate-750 px-2.5 py-1.5 rounded border border-slate-700 font-bold"
-            >
-              Exit
-            </Link>
-          </div>
-        </header>
+          <nav className="store-tabs" aria-label="Customer sections">
+            {[
+              { id: "shop", label: "Shop" },
+              { id: "cart", label: "Cart", count: cartItemCount },
+              { id: "tracking", label: "Track", count: activeCustomerOrders.length },
+              { id: "history", label: "Orders" },
+            ].map(item => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveTab(item.id as typeof activeTab)}
+                className={`store-tab ${activeTab === item.id ? "is-active" : ""}`}
+              >
+                <span>{item.label}</span>
+                {item.count ? <span className="store-tab-count">{item.count}</span> : null}
+              </button>
+            ))}
+          </nav>
 
-        {/* Dynamic Navigation Tabs Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          
-          {/* TAB 1: SHOPPING STOREFRONT */}
-          {activeTab === "shop" && (
-            <div className="space-y-4">
-              {/* Category selector */}
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none shrink-0">
+          <Link href="/" className="store-secondary hidden sm:inline-flex">
+            Exit
+          </Link>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-7">
+        <section className="store-hero reveal-item">
+          <div className="max-w-3xl">
+            <p className="store-eyebrow">Same data stream as dispatch</p>
+            <h1>Shop, checkout, and track the handoff without leaving the store.</h1>
+            <p>
+              Browse the live catalog, confirm the Pune delivery point, and follow the
+              assigned agent as the owner console updates the same order.
+            </p>
+          </div>
+          <div className="store-hero-metrics">
+            <div>
+              <span>{state.products.length}</span>
+              <p>products</p>
+            </div>
+            <div>
+              <span>{cartItemCount}</span>
+              <p>in cart</p>
+            </div>
+            <div>
+              <span>{activeCustomerOrders.length}</span>
+              <p>active</p>
+            </div>
+          </div>
+        </section>
+
+        {(activeTab === "shop" || activeTab === "cart") && (
+          <section className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="store-panel reveal-item p-4 sm:p-5 [animation-delay:90ms]">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+                <div>
+                  <p className="store-eyebrow">Catalog</p>
+                  <h2 className="text-xl font-black tracking-tight text-white">
+                    Fresh essentials ready for dispatch
+                  </h2>
+                </div>
+
+                <label className="store-search">
+                  <Search className="size-4" />
+                  <input
+                    type="search"
+                    value={productQuery}
+                    onChange={(e) => setProductQuery(e.target.value)}
+                    placeholder="Search product, SKU, or category"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
                 {categories.map(cat => (
                   <button
                     key={cat}
+                    type="button"
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap border transition-all ${selectedCategory === cat ? "bg-pink-600 text-white border-pink-500" : "bg-slate-950 border-slate-850 text-slate-400 hover:text-slate-200"}`}
+                    className={`store-chip ${selectedCategory === cat ? "is-active" : ""}`}
                   >
                     {cat}
                   </button>
                 ))}
               </div>
 
-              {/* Product Grid */}
-              <div className="grid grid-cols-2 gap-3">
-                {filteredProducts.map(p => (
-                  <div key={p.id} className="p-3.5 rounded-2xl bg-slate-950 border border-slate-850 flex flex-col justify-between space-y-3">
-                    <div>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.image} alt={p.name} className="w-full h-24 object-cover rounded-xl bg-slate-900 border border-slate-900" />
-                      <div className="mt-2.5">
-                        <span className="text-[9px] font-bold text-slate-500 block uppercase tracking-wide">{p.category}</span>
-                        <h4 className="font-bold text-slate-200 text-xs mt-0.5 line-clamp-1 leading-normal">{p.name}</h4>
-                      </div>
-                    </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredProducts.map(p => {
+                  const isLowStock = p.stock > 0 && p.stock < 10;
 
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="font-black text-sm text-white font-mono">₹{p.price.toFixed(2)}</span>
-                      {p.stock > 0 ? (
-                        <button
-                          onClick={() => addToCart(p)}
-                          className="px-2 py-1 rounded bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] transition-all"
-                        >
-                          + Add
-                        </button>
-                      ) : (
-                        <span className="text-[9px] font-semibold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
-                          Sold Out
+                  return (
+                    <article key={p.id} className="store-product-card">
+                      <div className="store-product-media">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={p.image} alt={p.name} />
+                        <span className={`store-stock ${isLowStock ? "is-risk" : ""}`}>
+                          {p.stock > 0 ? `${p.stock} left` : "Sold out"}
                         </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: SHOPPING CART */}
-          {activeTab === "cart" && (
-            <div className="space-y-4">
-              <button
-                onClick={() => setActiveTab("shop")}
-                className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 font-bold"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" /> Back to Products
-              </button>
-
-              {cart.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    {cart.map(item => (
-                      <div key={item.product.id} className="p-3.5 rounded-xl bg-slate-950 border border-slate-850 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={item.product.image} alt={item.product.name} className="w-10 h-10 object-cover rounded-lg bg-slate-900 border border-slate-900" />
-                          <div>
-                            <h4 className="font-bold text-slate-200 text-xs leading-tight truncate max-w-[120px]">{item.product.name}</h4>
-                            <p className="text-[10px] text-slate-500 font-mono mt-0.5">₹{item.product.price.toFixed(2)} each</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
-                            <button
-                              onClick={() => updateCartQty(item.product.id, -1)}
-                              className="w-5 h-5 flex items-center justify-center text-slate-400 font-bold text-xs"
-                            >
-                              -
-                            </button>
-                            <span className="text-xs text-slate-200 font-mono font-bold px-2">{item.quantity}</span>
-                            <button
-                              onClick={() => updateCartQty(item.product.id, 1)}
-                              className="w-5 h-5 flex items-center justify-center text-slate-400 font-bold text-xs"
-                            >
-                              +
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => removeFromCart(item.product.id)}
-                            className="p-1 rounded text-rose-400 hover:bg-slate-900/50"
-                          >
-                            <Trash2 className="w-4 h-4" />
+                      </div>
+                      <div className="store-product-copy">
+                        <p>{p.category}</p>
+                        <h3>{p.name}</h3>
+                        <span>{p.sku}</span>
+                      </div>
+                      <div className="store-product-actions">
+                        <strong>₹{p.price.toFixed(2)}</strong>
+                        {p.stock > 0 ? (
+                          <button type="button" onClick={() => addToCart(p)}>
+                            Add
                           </button>
-                        </div>
+                        ) : (
+                          <span className="store-unavailable">Out</span>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </article>
+                  );
+                })}
+              </div>
 
-                  {/* Checkout Fields Form */}
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-850 space-y-3">
-                    <h4 className="font-bold text-xs text-slate-200 border-b border-slate-900 pb-2 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-pink-500" /> Delivery Address
-                    </h4>
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <label className="text-[9px] text-slate-400 font-bold uppercase">Customer Name</label>
-                        <input
-                          type="text"
-                          required
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] text-slate-400 font-bold uppercase">Phone Number</label>
-                        <input
-                          type="text"
-                          required
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none font-mono"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[9px] text-slate-400 font-bold uppercase">Delivery Address</label>
-                        <input
-                          type="text"
-                          required
-                          value={address}
-                          onChange={(e) => setAddress(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none"
-                        />
-                      </div>
-
-                      {/* Coordinates details */}
-                      <div className="grid grid-cols-2 gap-3 pt-1">
-                        <div className="space-y-1">
-                          <label className="text-[9px] text-slate-400 font-bold uppercase">Latitude Coordinate</label>
-                          <input
-                            type="number"
-                            step="0.0001"
-                            value={lat}
-                            onChange={(e) => setLat(parseFloat(e.target.value) || 18.52)}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none font-mono"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[9px] text-slate-400 font-bold uppercase">Longitude Coordinate</label>
-                          <input
-                            type="number"
-                            step="0.0001"
-                            value={lng}
-                            onChange={(e) => setLng(parseFloat(e.target.value) || 73.85)}
-                            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Summary and Pay */}
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-850 space-y-4">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-400 font-medium">Cart Subtotal:</span>
-                      <span className="font-mono font-bold text-slate-200">₹{cartTotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-slate-400 font-medium">Delivery Fee:</span>
-                      <span className="font-mono text-emerald-400 font-bold">FREE</span>
-                    </div>
-                    <div className="flex justify-between items-center border-t border-slate-900 pt-3 text-sm">
-                      <span className="font-bold text-slate-200">Total Price:</span>
-                      <span className="font-black text-white font-mono">₹{cartTotal.toFixed(2)}</span>
-                    </div>
-
-                    <button
-                      onClick={() => setShowSandboxModal(true)}
-                      className="w-full py-3 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs shadow-lg shadow-pink-600/15 transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <CreditCard className="w-4 h-4" /> Secure Sandbox Checkout
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-12 text-center rounded-2xl bg-slate-950 border border-slate-850 text-slate-500 font-bold text-xs space-y-2">
-                  <ShoppingBag className="w-8 h-8 text-slate-800 mx-auto mb-1" />
-                  <p>Your shopping cart is empty.</p>
-                  <button
-                    onClick={() => setActiveTab("shop")}
-                    className="text-pink-400 hover:underline font-bold"
-                  >
-                    Go Shop Now
+              {filteredProducts.length === 0 && (
+                <div className="store-empty mt-4">
+                  <ShoppingBag className="size-6" />
+                  <p>No products match that filter.</p>
+                  <button type="button" onClick={() => { setSelectedCategory("All"); setProductQuery(""); }}>
+                    Reset filters
                   </button>
                 </div>
               )}
             </div>
-          )}
 
-          {/* TAB 3: ORDER TRACKING */}
-          {activeTab === "tracking" && (
-            <div className="space-y-4">
+            <aside className="store-rail reveal-item p-4 sm:p-5 [animation-delay:160ms]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="store-eyebrow">Checkout rail</p>
+                  <h2 className="text-lg font-black text-white">Your cart</h2>
+                </div>
+                <span className="store-cart-count">{cartItemCount}</span>
+              </div>
+
+              {cart.length > 0 ? (
+                <div className="mt-4 space-y-2">
+                  {cart.map(item => (
+                    <div key={item.product.id} className="store-cart-row">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.product.image} alt={item.product.name} />
+                      <div className="min-w-0 flex-1">
+                        <p>{item.product.name}</p>
+                        <span>₹{item.product.price.toFixed(2)} each</span>
+                      </div>
+                      <div className="store-qty">
+                        <button type="button" onClick={() => updateCartQty(item.product.id, -1)}>-</button>
+                        <strong>{item.quantity}</strong>
+                        <button type="button" onClick={() => updateCartQty(item.product.id, 1)}>+</button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.product.id)}
+                        className="store-remove"
+                        aria-label={`Remove ${item.product.name}`}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="store-empty mt-4">
+                  <ShoppingBag className="size-7" />
+                  <p>Your cart is ready for the first item.</p>
+                  <button type="button" onClick={() => setActiveTab("shop")}>
+                    Browse products
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
+                <div className={`promise-card signal-${customerPromise.stockSignal}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="store-eyebrow">Promise Engine</p>
+                      <h3>{customerPromise.title}</h3>
+                    </div>
+                    <span>{customerPromise.etaRange}</span>
+                  </div>
+                  <p>{customerPromise.summary}</p>
+                  <div className="promise-meta">
+                    <strong>{customerPromise.confidence}% confidence</strong>
+                    <small>{customerPromise.hubName}</small>
+                  </div>
+                  <ul>
+                    {customerPromise.reasons.map((reason) => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="store-field">
+                  <label>Customer</label>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                  />
+                </div>
+                <div className="store-field">
+                  <label>Phone</label>
+                  <input
+                    type="text"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                  />
+                </div>
+                <div className="store-field">
+                  <label>Delivery address</label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="store-field">
+                    <label>Latitude</label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      value={lat}
+                      onChange={(e) => setLat(parseFloat(e.target.value) || 18.52)}
+                    />
+                  </div>
+                  <div className="store-field">
+                    <label>Longitude</label>
+                    <input
+                      type="number"
+                      step="0.0001"
+                      value={lng}
+                      onChange={(e) => setLng(parseFloat(e.target.value) || 73.85)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="store-total mt-5">
+                <div>
+                  <span>Subtotal</span>
+                  <strong>₹{cartTotal.toFixed(2)}</strong>
+                </div>
+                <div>
+                  <span>Delivery</span>
+                  <strong className="text-emerald-300">Free</strong>
+                </div>
+                <div className="is-grand">
+                  <span>Total</span>
+                  <strong>₹{cartTotal.toFixed(2)}</strong>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                disabled={cart.length === 0}
+                onClick={() => setShowSandboxModal(true)}
+                className="store-checkout"
+              >
+                <CreditCard className="size-4" />
+                Secure sandbox checkout
+              </button>
+            </aside>
+          </section>
+        )}
+
+        {activeTab === "tracking" && (
+          <section className="mt-5 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="store-panel reveal-item p-5">
+              <button
+                type="button"
+                onClick={() => setActiveTab("shop")}
+                className="store-secondary mb-5"
+              >
+                <ArrowLeft className="size-3.5" /> Back to store
+              </button>
+
               {activeTrackingOrder ? (
-                <div className="space-y-4">
-                  {/* Summary Card */}
-                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-850 space-y-3">
-                    <div className="flex justify-between items-start border-b border-slate-900 pb-2.5">
-                      <div>
-                        <h4 className="font-bold text-xs text-slate-200">Tracking: Order {activeTrackingOrder.id}</h4>
-                        <span className="text-[9px] text-slate-500 block font-mono mt-0.5">Placed: {new Date(activeTrackingOrder.timestamp).toLocaleTimeString()}</span>
-                      </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-pink-500/10 text-pink-400 border border-pink-500/20">
-                        {activeTrackingOrder.status.replace(/_/g, " ")}
-                      </span>
-                    </div>
-
-                    {/* Stepper progress */}
-                    <div className="space-y-3.5 relative pl-6 before:content-[''] before:absolute before:left-2 before:top-2.5 before:bottom-2.5 before:w-0.5 before:bg-slate-800">
-                      {[
-                        { label: "Order Placed", desc: "Waiting for store dispatch confirmation", stateKey: "placed" },
-                        { label: "Order Confirmed", desc: "Assigned to delivery agent", stateKey: "confirmed" },
-                        { label: "Dispatched", desc: "Package picked up from store", stateKey: "dispatched" },
-                        { label: "Out for Delivery", desc: "Agent is heading to your location", stateKey: "out_for_delivery" },
-                        { label: "Delivered", desc: "Package handed over successfully", stateKey: "delivered" }
-                      ].map((step, idx) => {
-                        const activeIdx = getStatusIndex(activeTrackingOrder.status);
-                        const isDone = idx <= activeIdx;
-                        const isCurrent = idx === activeIdx;
-
-                        return (
-                          <div key={idx} className="relative text-xs">
-                            <span className={`absolute -left-6 top-0.5 w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center text-[9px] font-bold transition-all ${isDone ? "bg-pink-500 border-pink-500 text-slate-950 font-black" : "bg-slate-950 border-slate-800 text-slate-600"}`}>
-                              {isDone ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : idx + 1}
-                            </span>
-                            <div className="pl-1">
-                              <h5 className={`font-bold ${isCurrent ? "text-pink-400" : isDone ? "text-slate-200" : "text-slate-600"}`}>
-                                {step.label}
-                              </h5>
-                              <p className={`text-[10px] mt-0.5 ${isCurrent ? "text-slate-300" : "text-slate-500"}`}>{step.desc}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Leaflet Map Tracker */}
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-xs text-slate-200 flex items-center gap-1.5">
-                      <Truck className="w-3.5 h-3.5 text-pink-500" /> Live Agent Tracking Map
-                    </h4>
-                    {trackingAgent ? (
-                      <div className="h-60 w-full rounded-2xl overflow-hidden border border-slate-850 bg-slate-950">
-                        <DeliveryMap 
-                          agents={[trackingAgent]} 
-                          orders={[activeTrackingOrder]}
-                          focusLatLng={[activeTrackingOrder.lat, activeTrackingOrder.lng]} 
-                          warehouses={state.warehouses}
-                        />
-                      </div>
-                    ) : (
-                      <div className="p-6 text-center text-xs rounded-xl bg-slate-950 border border-slate-850 text-slate-500">
-                        Map will activate once an agent is assigned and starts transit.
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Feedback Trigger */}
-                  {activeTrackingOrder.status === "delivered" && (
-                    <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-3">
-                      <h4 className="font-bold text-xs text-emerald-400 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4" /> Order Delivered!
-                      </h4>
-                      <p className="text-[10px] text-slate-400 leading-normal">
-                        Your delivery completed successfully. Please take a moment to rate the delivery agent's experience.
+                <div>
+                  <div className="flex flex-col gap-3 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="store-eyebrow">Tracking</p>
+                      <h2 className="text-2xl font-black text-white">
+                        Order {activeTrackingOrder.id}
+                      </h2>
+                      <p className="mt-2 text-sm text-slate-400">
+                        {activeTrackingOrder.address}
                       </p>
-                      
+                    </div>
+                    <span className="store-status-badge">
+                      {activeTrackingOrder.status.replace(/_/g, " ")}
+                    </span>
+                  </div>
+
+                  <div className="mt-5 grid gap-3">
+                    {[
+                      { label: "Order placed", desc: "Store received the cart." },
+                      { label: "Confirmed", desc: "Inventory reserved and assigned." },
+                      { label: "Dispatched", desc: "Package picked up from the store." },
+                      { label: "Out for delivery", desc: "Agent is heading to your address." },
+                      { label: "Delivered", desc: "Package handed over successfully." }
+                    ].map((step, idx) => {
+                      const activeIdx = getStatusIndex(activeTrackingOrder.status);
+                      const isDone = idx <= activeIdx;
+                      const isCurrent = idx === activeIdx;
+
+                      return (
+                        <div key={step.label} className={`tracking-step ${isDone ? "is-done" : ""} ${isCurrent ? "is-current" : ""}`}>
+                          <span>{isDone ? <Check className="size-3" /> : idx + 1}</span>
+                          <div>
+                            <p>{step.label}</p>
+                            <small>{step.desc}</small>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {activeTrackingOrder.status === "delivered" && (
+                    <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-4">
+                      <h3 className="flex items-center gap-2 text-sm font-black text-emerald-300">
+                        <CheckCircle2 className="size-4" /> Order delivered
+                      </h3>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Rate the delivery agent after handoff so the owner console receives the feedback.
+                      </p>
                       {!activeTrackingOrder.deliveryRating ? (
                         <button
+                          type="button"
                           onClick={() => {
                             setRatingOrder(activeTrackingOrder.id);
                             setSelectedRating(5);
                           }}
-                          className="px-3.5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] transition-all shadow-md shadow-emerald-600/10"
+                          className="store-secondary mt-3"
                         >
-                          Rate Experience
+                          Rate experience
                         </button>
                       ) : (
-                        <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
-                          You rated this: <span className="text-amber-400 font-black font-mono">{activeTrackingOrder.deliveryRating} / 5</span> Stars
-                        </div>
+                        <p className="mt-3 text-xs font-bold text-slate-400">
+                          Rated <span className="text-amber-300">{activeTrackingOrder.deliveryRating} / 5</span>
+                        </p>
                       )}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="p-12 text-center rounded-2xl bg-slate-950 border border-slate-850 text-slate-500 font-bold text-xs space-y-2">
-                  <Play className="w-8 h-8 text-slate-800 mx-auto mb-1 animate-pulse" />
-                  <p>No active order being tracked.</p>
-                  <button
-                    onClick={() => setActiveTab("shop")}
-                    className="text-pink-400 hover:underline font-bold"
-                  >
-                    Start Shopping
+                <div className="store-empty min-h-80">
+                  <Play className="size-8" />
+                  <p>No order is selected for tracking.</p>
+                  {activeCustomerOrders.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setTrackingOrderId(activeCustomerOrders[0].id)}
+                    >
+                      Track latest order
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => setActiveTab("shop")}>
+                      Start a delivery
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="store-panel reveal-item overflow-hidden p-0 [animation-delay:120ms]">
+              <div className="flex items-center justify-between border-b border-white/10 p-4">
+                <div>
+                  <p className="store-eyebrow">Live map</p>
+                  <h2 className="text-base font-black text-white">Agent and delivery point</h2>
+                </div>
+                <Truck className="size-5 text-slate-400" />
+              </div>
+              {activeTrackingOrder && trackingAgent ? (
+                <div className="h-[520px] min-h-80 w-full bg-slate-950">
+                  <DeliveryMap
+                    agents={[trackingAgent]}
+                    orders={[activeTrackingOrder]}
+                    focusLatLng={[activeTrackingOrder.lat, activeTrackingOrder.lng]}
+                    warehouses={state.warehouses}
+                  />
+                </div>
+              ) : (
+                <div className="store-empty min-h-[520px]">
+                  <MapPin className="size-8" />
+                  <p>Map activates after the order has an assigned agent.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {activeTab === "history" && (
+          <section className="store-panel reveal-item mt-5 p-5">
+            <div className="flex flex-col gap-3 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="store-eyebrow">Order history</p>
+                <h2 className="text-2xl font-black text-white">Returns and receipts</h2>
+              </div>
+              <button type="button" onClick={() => setActiveTab("shop")} className="store-secondary">
+                Continue shopping
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {customerHistory.map(order => (
+                <article key={order.id} className="store-order-card">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-black text-white">Order {order.id}</p>
+                      <span className="font-mono text-[11px] text-slate-500">
+                        {new Date(order.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <span className={`store-status-badge ${order.status === "returned" ? "is-danger" : ""}`}>
+                      {order.status}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-1 border-t border-white/10 pt-4 text-xs text-slate-400">
+                    {order.products.map((p, idx) => (
+                      <p key={idx}>
+                        {p.name} <span className="font-bold text-white">x{p.quantity}</span>
+                      </p>
+                    ))}
+                    <p className="pt-2">
+                      Total paid: <strong className="font-mono text-white">₹{order.total.toFixed(2)}</strong>
+                    </p>
+                  </div>
+
+                  {order.status === "delivered" && !order.returnRequested && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReturnOrder(order.id);
+                        setReturnReason("Item damaged on arrival");
+                      }}
+                      className="store-return"
+                    >
+                      Request return
+                    </button>
+                  )}
+
+                  {order.returnRequested && (
+                    <div className="mt-4 flex items-start gap-2 rounded-lg border border-rose-400/20 bg-rose-400/10 p-3 text-xs text-rose-300">
+                      <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+                      <span>Refund completed. Reason: &quot;{order.returnReason}&quot;</span>
+                    </div>
+                  )}
+                </article>
+              ))}
+
+              {customerHistory.length === 0 && (
+                <div className="store-empty md:col-span-2">
+                  <ShoppingBag className="size-8" />
+                  <p>You have not placed any orders yet.</p>
+                  <button type="button" onClick={() => setActiveTab("shop")}>
+                    Shop the catalog
                   </button>
                 </div>
               )}
             </div>
-          )}
-
-          {/* TAB 4: ORDER HISTORY & RETURNS */}
-          {activeTab === "history" && (
-            <div className="space-y-4">
-              <h3 className="font-bold text-xs text-slate-300">My Orders History</h3>
-              <div className="space-y-3">
-                {customerHistory.map(order => (
-                  <div key={order.id} className="p-4 rounded-xl bg-slate-950 border border-slate-850 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-bold text-slate-200 text-xs">Order {order.id}</span>
-                        <p className="text-[9px] text-slate-500 font-mono mt-0.5">{new Date(order.timestamp).toLocaleString()}</p>
-                      </div>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide border ${order.status === "delivered" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : order.status === "returned" ? "bg-rose-500/10 text-rose-400 border-rose-500/20" : "bg-slate-900 border-slate-800 text-slate-400"}`}>
-                        {order.status}
-                      </span>
-                    </div>
-
-                    <div className="text-[10px] text-slate-400 space-y-0.5 border-t border-slate-900 pt-2.5">
-                      {order.products.map((p, idx) => (
-                        <p key={idx}>
-                          {p.name} <span className="font-bold text-slate-200">x{p.quantity}</span>
-                        </p>
-                      ))}
-                      <p className="text-slate-500 pt-1">
-                        Total paid: <strong className="text-white font-mono">₹{order.total.toFixed(2)}</strong> | Payment: <span className="capitalize font-semibold text-emerald-400">{order.paymentStatus}</span>
-                      </p>
-                    </div>
-
-                    {/* Return Action */}
-                    {order.status === "delivered" && !order.returnRequested && (
-                      <button
-                        onClick={() => {
-                          setReturnOrder(order.id);
-                          setReturnReason("Item damaged on arrival");
-                        }}
-                        className="w-full py-1.5 rounded bg-slate-900 hover:bg-slate-850 text-[10px] text-rose-400 border border-rose-500/25 font-bold transition-colors"
-                      >
-                        Request Return (24h Window)
-                      </button>
-                    )}
-
-                    {order.returnRequested && (
-                      <div className="p-2 rounded bg-rose-500/5 border border-rose-500/15 text-[9px] text-rose-400/80 leading-normal flex items-start gap-1">
-                        <ShieldAlert className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                        <span>Returned Refund: Completed. Reason: &quot;{order.returnReason}&quot;</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {customerHistory.length === 0 && (
-                  <div className="p-12 text-center rounded-2xl bg-slate-950 border border-slate-850 text-slate-500 font-bold text-xs">
-                    You have not placed any orders yet.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-        </div>
-
-        {/* Dynamic Cart Indicator Overlay */}
-        {activeTab === "shop" && cart.length > 0 && (
-          <div className="p-4 bg-slate-950 border-t border-slate-850 flex items-center justify-between shrink-0 animate-fade-in relative z-20">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-pink-600 text-white font-bold text-xs flex items-center justify-center font-mono">
-                {cart.reduce((a, b) => a + b.quantity, 0)}
-              </span>
-              <div>
-                <span className="text-[10px] text-slate-400 font-medium block">Subtotal</span>
-                <span className="font-black text-white font-mono text-xs">₹{cartTotal.toFixed(2)}</span>
-              </div>
-            </div>
-            <button
-              onClick={() => setActiveTab("cart")}
-              className="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs flex items-center gap-1 shadow-lg shadow-pink-600/15 transition-all"
-            >
-              View Cart <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
+          </section>
         )}
-
-        {/* App Footer Tab Bar */}
-        <footer className="h-14 bg-slate-900 border-t border-slate-850 flex items-center justify-around shrink-0 relative z-30 select-none">
-          <button
-            onClick={() => setActiveTab("shop")}
-            className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors ${activeTab === "shop" ? "text-pink-500" : "text-slate-400 hover:text-slate-200"}`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Shop
-          </button>
-          <button
-            onClick={() => setActiveTab("cart")}
-            className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors relative ${activeTab === "cart" ? "text-pink-500" : "text-slate-400 hover:text-slate-200"}`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Cart
-            {cart.length > 0 && (
-              <span className="absolute -top-1.5 -right-2 px-1 py-0.5 rounded-full text-[8px] font-bold bg-pink-500 text-white">
-                {cart.reduce((a, b) => a + b.quantity, 0)}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("tracking")}
-            className={`flex flex-col items-center gap-0.5 text-[9px] font-bold transition-colors ${activeTab === "tracking" ? "text-pink-500" : "text-slate-400 hover:text-slate-200"}`}
-          >
-            <Truck className="w-4 h-4" />
-            Tracking
-            {state.orders.filter(o => o.customerName === customerName && (o.status !== "delivered" && o.status !== "failed" && o.status !== "returned")).length > 0 && (
-              <span className="absolute -top-1.5 -right-2 w-2 h-2 rounded-full bg-pink-500 animate-ping" />
-            )}
-          </button>
-        </footer>
-
-        {/* Simulated Phone Bar Footer */}
-        <div className="h-5 bg-slate-950 flex items-center justify-center pb-2.5 shrink-0">
-          <div className="w-28 h-1 rounded-full bg-slate-800" />
-        </div>
-      </div>
+      </main>
 
       {/* --- SANDBOX PAYMENT DIALOG GATEWAY MODAL --- */}
       {showSandboxModal && (

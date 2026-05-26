@@ -1,0 +1,20 @@
+{
+  "project": "LogiTrack",
+  "framework": "Next.js app router",
+  "fontStack": "Geist and Geist Mono via next/font/google in app/layout.tsx",
+  "css": "Tailwind v4 imported from app/globals.css",
+  "motion": "motion-cut; no framer-motion/gsap/motion dependency detected",
+  "theme": "modern-minimal Workbench logistics palette",
+  "preserve": [
+    "app router route structure",
+    "Geist font stack",
+    "local state-store data model",
+    "Three.js logistics scene on home"
+  ],
+  "introduced": [
+    "design.md",
+    "Hallmark route shell classes",
+    "shared command surface tokens",
+    "reduced generic indigo/pink styling"
+  ]
+}
