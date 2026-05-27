@@ -2,8 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { BarChart3, Truck, Package, ShieldCheck, ArrowRight } from "lucide-react";
-import Link from "next/link";
+import { BarChart3, Truck, Package, ShieldCheck } from "lucide-react";
 
 const agents = [
   {
@@ -34,52 +33,89 @@ const agents = [
 
 export function WorkflowSection() {
   const [activeAgent, setActiveAgent] = useState(agents[0].id);
+  const selectedAgent = agents.find((agent) => agent.id === activeAgent) ?? agents[0];
+  const SelectedIcon = selectedAgent.icon;
 
   return (
-    <section id="agents" className="relative py-24 md:py-32 px-4 sm:px-6 lg:px-8 border-t border-border">
-      <div className="mx-auto max-w-[1000px]">
-        <div className="mb-16">
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-            Deploy AI agents across all workflows
-          </h2>
-        </div>
+    <section id="agents" className="relative border-t border-border px-4 py-20 sm:px-6 md:py-24 lg:px-8">
+      <div className="mx-auto max-w-[1180px]">
+        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <div className="max-w-[520px]">
+            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              Platform
+            </p>
+            <h2 className="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+              Deploy AI agents across all workflows
+            </h2>
+            <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-muted-foreground">
+              Every part of your supply chain — from demand prediction to driver payouts — is handled by a dedicated agent that reasons over your live data and proposes actions for your approval.
+            </p>
 
-        <div className="flex flex-col gap-0 border-t border-border">
-          {agents.map((agent) => {
-            const isActive = activeAgent === agent.id;
-            const Icon = agent.icon;
-            
-            return (
-              <div key={agent.id} className="border-b border-border">
-                <button
-                  type="button"
-                  onClick={() => setActiveAgent(isActive ? "" : agent.id)}
-                  className="group flex w-full items-center gap-4 py-6 text-left transition-colors focus-visible:outline-none focus-visible:bg-secondary/50 rounded-lg px-2 -mx-2"
-                >
-                  <span className={`flex size-8 shrink-0 items-center justify-center rounded-full ring-1 transition-all duration-300 ${isActive ? `bg-accent/10 text-accent ring-accent/20 scale-100 opacity-100` : "bg-secondary text-muted-foreground ring-border scale-90 opacity-70 group-hover:scale-100 group-hover:opacity-100 group-hover:text-foreground"}`}>
-                    <Icon className="size-4" />
-                  </span>
-                  <span className={`flex-1 text-xl sm:text-2xl font-medium transition-colors duration-300 ${isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"}`}>
-                    {agent.name}
-                  </span>
-                </button>
-                
-                <motion.div
-                  initial={false}
-                  animate={{ 
-                    height: isActive ? "auto" : 0,
-                    opacity: isActive ? 1 : 0,
-                    paddingBottom: isActive ? "24px" : 0
-                  }}
-                  className="overflow-hidden px-2 -mx-2"
-                >
-                  <p className="max-w-[48ch] text-[15px] leading-[1.6] text-muted-foreground pl-12">
-                    {agent.description}
-                  </p>
-                </motion.div>
+            <div className="mt-8 grid grid-cols-3 overflow-hidden rounded-xl border border-border">
+              <div className="p-4">
+                <p className="text-2xl font-semibold tracking-tight text-foreground">4</p>
+                <p className="mt-1 text-xs text-muted-foreground">Active agents</p>
               </div>
-            );
-          })}
+              <div className="border-l border-border p-4">
+                <p className="text-2xl font-semibold tracking-tight text-foreground">&lt; 1s</p>
+                <p className="mt-1 text-xs text-muted-foreground">Decision latency</p>
+              </div>
+              <div className="border-l border-border p-4">
+                <p className="text-2xl font-semibold tracking-tight text-foreground">100%</p>
+                <p className="mt-1 text-xs text-muted-foreground">Human sign-off</p>
+              </div>
+            </div>
+
+            <article className="mt-7 rounded-xl border border-border bg-background p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent ring-1 ring-accent/20">
+                  <SelectedIcon className="size-4" />
+                </span>
+                <p className="font-semibold text-foreground">{selectedAgent.name}</p>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                {selectedAgent.description}
+              </p>
+            </article>
+          </div>
+
+          <div className="flex flex-col gap-0 border-t border-border lg:ml-8 lg:mt-6">
+            {agents.map((agent) => {
+              const isActive = activeAgent === agent.id;
+              const Icon = agent.icon;
+              
+              return (
+                <div key={agent.id} className="border-b border-border">
+                  <button
+                    type="button"
+                    onClick={() => setActiveAgent(isActive ? "" : agent.id)}
+                    className="group flex w-full items-center gap-4 py-5 text-left transition-colors focus-visible:outline-none focus-visible:bg-secondary/50 rounded-lg px-2 -mx-2"
+                  >
+                    <span className={`flex size-8 shrink-0 items-center justify-center rounded-full ring-1 transition-all duration-300 ${isActive ? `bg-accent/10 text-accent ring-accent/20 scale-100 opacity-100` : "bg-secondary text-muted-foreground ring-border scale-90 opacity-70 group-hover:scale-100 group-hover:opacity-100 group-hover:text-foreground"}`}>
+                      <Icon className="size-4" />
+                    </span>
+                    <span className={`flex-1 text-2xl font-medium tracking-tight transition-colors duration-300 ${isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"}`}>
+                      {agent.name}
+                    </span>
+                  </button>
+                  
+                  <motion.div
+                    initial={false}
+                    animate={{ 
+                      height: isActive ? "auto" : 0,
+                      opacity: isActive ? 1 : 0,
+                      paddingBottom: isActive ? "20px" : 0
+                    }}
+                    className="overflow-hidden px-2 -mx-2"
+                  >
+                    <p className="max-w-[48ch] text-[15px] leading-[1.6] text-muted-foreground pl-12">
+                      {agent.description}
+                    </p>
+                  </motion.div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
