@@ -113,13 +113,7 @@ export function HeroSection() {
                 Open the command center
                 <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
               </Link>
-              <Link
-                href="/vendor"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-md px-5 text-sm font-medium text-foreground transition-colors hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                <Terminal className="size-4 text-muted-foreground" />
-                Owner console
-              </Link>
+
             </div>
 
             {/* Left-side stats (sit below CTA, aligned with the hero grid) */}
