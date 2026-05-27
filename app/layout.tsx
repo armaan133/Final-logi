@@ -31,7 +31,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 font-sans text-zinc-900 dark:bg-black dark:text-zinc-50">
+      <body className="min-h-full flex flex-col bg-background font-sans text-foreground">
         <LogiTrackProvider>{children}</LogiTrackProvider>
       </body>
     </html>

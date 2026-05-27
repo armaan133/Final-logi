@@ -144,18 +144,18 @@ export function OriginalThinkingLoader({ isVisible }: OriginalThinkingLoaderProp
 
   return (
     <div
-      className={`fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-slate-950 transition-[opacity,filter] duration-700 ease-out ${
+      className={`fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-background transition-[opacity,filter] duration-700 ease-out ${
         isVisible ? "opacity-100 blur-0" : "pointer-events-none opacity-0 blur-sm"
       }`}
       role="status"
       aria-live="polite"
       aria-label="Loading LogiTrack"
     >
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,9,7,0.94),rgba(8,9,7,1))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--logi-paper),var(--logi-paper-2))]" />
 
       <div className="relative grid justify-items-center gap-5 px-6 text-center">
         <div className="relative grid size-44 place-items-center sm:size-52">
-          <div className="absolute inset-5 rounded-full border border-white/10 bg-white/[0.02] shadow-[inset_0_0_48px_rgba(255,255,255,0.04)]" />
+          <div className="absolute inset-5 rounded-full border border-border bg-secondary/60 shadow-[inset_0_0_48px_rgba(0,0,0,0.04)]" />
           <svg
             viewBox="0 0 100 100"
             fill="none"
@@ -164,9 +164,9 @@ export function OriginalThinkingLoader({ isVisible }: OriginalThinkingLoaderProp
           >
             <defs>
               <linearGradient id={gradientId} x1="22" y1="12" x2="80" y2="88">
-                <stop offset="0%" stopColor="#67e8f9" />
-                <stop offset="48%" stopColor="#a78bfa" />
-                <stop offset="100%" stopColor="#34d399" />
+                <stop offset="0%" stopColor="#f5c878" />
+                <stop offset="48%" stopColor="#e8a84a" />
+                <stop offset="100%" stopColor="#d49a50" />
               </linearGradient>
             </defs>
             <g ref={groupRef}>
@@ -194,8 +194,8 @@ export function OriginalThinkingLoader({ isVisible }: OriginalThinkingLoaderProp
         </div>
 
         <div className="grid gap-2">
-          <p className="text-sm font-black text-white">LogiTrack</p>
-          <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-100/[0.45]">
+          <p className="text-sm font-black text-foreground">LogiTrack</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-muted-foreground">
             Preparing control room
           </p>
         </div>

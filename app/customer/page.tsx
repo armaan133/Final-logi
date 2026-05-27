@@ -2,34 +2,59 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useLogiTrack, Product, Order } from "@/lib/state-store";
 import { generateCustomerPromise } from "@/lib/autopilot-engine";
-import { 
-  ShoppingBag, Trash2, MapPin, CreditCard, Star, Search,
-  ArrowLeft, Check, CheckCircle2, ShieldAlert, Truck, Play
-} from "lucide-react";
-import Link from "next/link";
 
-// Dynamically import map to prevent SSR Leaflet errors
-const DeliveryMap = dynamic(() => import("@/components/DeliveryMap"), { ssr: false });
+const DeliveryMap = dynamic(() => import("@/components/DeliveryMap"), {
+  ssr: false,
+});
+
+type Tab = "shop" | "cart" | "tracking" | "history";
+
+const TABS: Array<{ id: Tab; label: string }> = [
+  { id: "shop", label: "Shop" },
+  { id: "cart", label: "Cart" },
+  { id: "tracking", label: "Track" },
+  { id: "history", label: "Orders" },
+];
+
+const CATEGORIES = [
+  "All",
+  "Beverages",
+  "Dairy & Alternatives",
+  "Bakery",
+  "Pantry",
+  "Snacks",
+  "Household",
+];
+
+const TRACKING_STEPS: Array<{ key: Order["status"]; label: string; desc: string }> = [
+  { key: "placed", label: "Order placed", desc: "Store received the cart." },
+  { key: "confirmed", label: "Confirmed", desc: "Inventory reserved and assigned." },
+  { key: "dispatched", label: "Dispatched", desc: "Package picked up from the store." },
+  { key: "out_for_delivery", label: "Out for delivery", desc: "Agent is heading to your address." },
+  { key: "delivered", label: "Delivered", desc: "Package handed over." },
+];
 
 export default function CustomerApp() {
   const { state, createOrder, submitFeedback, requestReturn } = useLogiTrack();
 
-  const [activeTab, setActiveTab] = useState<"shop" | "cart" | "tracking" | "history">("shop");
+  const [activeTab, setActiveTab] = useState<Tab>("shop");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [productQuery, setProductQuery] = useState("");
   const [cart, setCart] = useState<Array<{ product: Product; quantity: number }>>([]);
   const [customerName, setCustomerName] = useState("Aditi Gokhale");
   const [customerPhone, setCustomerPhone] = useState("+91 95450 12345");
   const [address, setAddress] = useState("Senapati Bapat Road, Pune, Maharashtra");
-  const [lat, setLat] = useState(18.5308);
-  const [lng, setLng] = useState(73.8313);
+  const [lat] = useState(18.5308);
+  const [lng] = useState(73.8313);
 
-  const [showSandboxModal, setShowSandboxModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentProvider, setPaymentProvider] = useState<"razorpay" | "stripe">("razorpay");
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
 
-  // Return and feedback states
   const [ratingOrder, setRatingOrder] = useState<string | null>(null);
   const [selectedRating, setSelectedRating] = useState<number>(5);
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
@@ -38,20 +63,10 @@ export default function CustomerApp() {
   const [returnReason, setReturnReason] = useState("Item damaged on arrival");
   const [returnSuccess, setReturnSuccess] = useState(false);
 
-  // Categories
-  const categories = [
-    { name: "All", image: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&q=80" },
-    { name: "Beverages", image: "https://images.unsplash.com/photo-1513530534585-c7b1394c6d51?w=150&q=80" },
-    { name: "Dairy & Alternatives", image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=150&q=80" },
-    { name: "Bakery", image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=150&q=80" },
-    { name: "Pantry", image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=150&q=80" },
-    { name: "Snacks", image: "https://images.unsplash.com/photo-1548907040-4d42b52125e0?w=150&q=80" },
-    { name: "Household", image: "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=150&q=80" }
-  ];
+  const [cartNotice, setCartNotice] = useState<string | null>(null);
 
-  // Filter products by category
   const filteredProducts = useMemo(() => {
-    return state.products.filter(p => {
+    return state.products.filter((p) => {
       const matchesCategory = selectedCategory === "All" || p.category === selectedCategory;
       const query = productQuery.trim().toLowerCase();
       const matchesQuery =
@@ -59,27 +74,29 @@ export default function CustomerApp() {
         p.name.toLowerCase().includes(query) ||
         p.category.toLowerCase().includes(query) ||
         p.sku.toLowerCase().includes(query);
-
       return matchesCategory && matchesQuery;
     });
   }, [state.products, selectedCategory, productQuery]);
 
-  // Cart logic
+  const showNotice = (msg: string) => {
+    setCartNotice(msg);
+    window.setTimeout(() => setCartNotice(null), 2500);
+  };
+
   const addToCart = (product: Product) => {
     if (product.stock <= 0) {
-      alert("This item is currently out of stock!");
+      showNotice(`${product.name} is out of stock.`);
       return;
     }
-
-    setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
+    setCart((prev) => {
+      const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
         if (existing.quantity >= product.stock) {
-          alert(`Cannot add more. Only ${product.stock} units available in inventory.`);
+          showNotice(`Only ${product.stock} units available.`);
           return prev;
         }
-        return prev.map(item => 
-          item.product.id === product.id 
+        return prev.map((item) =>
+          item.product.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
@@ -89,102 +106,130 @@ export default function CustomerApp() {
   };
 
   const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.product.id !== productId));
+    setCart((prev) => prev.filter((item) => item.product.id !== productId));
   };
 
-  const updateCartQty = (productId: string, val: number) => {
-    const product = state.products.find(p => p.id === productId);
+  const updateCartQty = (productId: string, delta: number) => {
+    const product = state.products.find((p) => p.id === productId);
     if (!product) return;
-
-    setCart(prev => {
-      return prev.map(item => {
-        if (item.product.id === productId) {
-          const nextQty = Math.max(1, item.quantity + val);
+    setCart((prev) =>
+      prev
+        .map((item) => {
+          if (item.product.id !== productId) return item;
+          const nextQty = item.quantity + delta;
+          if (nextQty <= 0) return { ...item, quantity: 0 };
           if (nextQty > product.stock) {
-            alert(`Only ${product.stock} units available.`);
+            showNotice(`Only ${product.stock} units available.`);
             return item;
           }
           return { ...item, quantity: nextQty };
-        }
-        return item;
-      });
-    });
+        })
+        .filter((item) => item.quantity > 0)
+    );
   };
 
   const cartTotal = useMemo(() => {
-    return parseFloat(cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0).toFixed(2));
+    return parseFloat(
+      cart
+        .reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+        .toFixed(2)
+    );
   }, [cart]);
 
-  const cartItemCount = useMemo(() => {
-    return cart.reduce((sum, item) => sum + item.quantity, 0);
-  }, [cart]);
+  const cartItemCount = useMemo(
+    () => cart.reduce((sum, item) => sum + item.quantity, 0),
+    [cart]
+  );
+
   const customerPromise = useMemo(
     () => generateCustomerPromise(state, cart, lat, lng),
     [state, cart, lat, lng]
   );
 
-  // Place order flow
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Assemble order products
-    const orderProds = cart.map(item => ({
+    if (paymentProcessing) return;
+    const orderProds = cart.map((item) => ({
       id: item.product.id,
       name: item.product.name,
       quantity: item.quantity,
-      price: item.product.price
+      price: item.product.price,
     }));
-
-    const orderId = createOrder({
-      customerName,
-      customerPhone,
-      address,
-      lat,
-      lng,
-      products: orderProds,
-      total: cartTotal
-    });
-
-    setCart([]);
-    setShowSandboxModal(false);
-    setTrackingOrderId(orderId);
-    setActiveTab("tracking");
+    setPaymentProcessing(true);
+    // Simulate sandbox gateway round-trip
+    window.setTimeout(() => {
+      const orderId = createOrder({
+        customerName,
+        customerPhone,
+        address,
+        lat,
+        lng,
+        products: orderProds,
+        total: cartTotal,
+        paymentProvider,
+      });
+      setCart([]);
+      setShowPaymentModal(false);
+      setPaymentProcessing(false);
+      setTrackingOrderId(orderId);
+      setActiveTab("tracking");
+    }, 900);
   };
 
-  // Find active tracking order
+  // 24-hour return window enforcement
+  const RETURN_WINDOW_MS = 24 * 60 * 60 * 1000;
+  const isWithinReturnWindow = (order: Order) => {
+    if (order.status !== "delivered") return false;
+    if (order.returnRequested) return false;
+    const deliveredAtMs = order.deliveredAt
+      ? new Date(order.deliveredAt).getTime()
+      : new Date(order.timestamp).getTime();
+    return Date.now() - deliveredAtMs <= RETURN_WINDOW_MS;
+  };
+  const hoursRemainingForReturn = (order: Order) => {
+    const deliveredAtMs = order.deliveredAt
+      ? new Date(order.deliveredAt).getTime()
+      : new Date(order.timestamp).getTime();
+    const remaining = RETURN_WINDOW_MS - (Date.now() - deliveredAtMs);
+    return Math.max(0, Math.ceil(remaining / (60 * 60 * 1000)));
+  };
+
   const activeTrackingOrder = useMemo(() => {
     if (!trackingOrderId) return null;
-    return state.orders.find(o => o.id === trackingOrderId) || null;
+    return state.orders.find((o) => o.id === trackingOrderId) || null;
   }, [state.orders, trackingOrderId]);
 
-  // Find active tracking order's agent coordinates
   const trackingAgent = useMemo(() => {
     if (!activeTrackingOrder || !activeTrackingOrder.agentId) return null;
-    return state.agents.find(a => a.id === activeTrackingOrder.agentId) || null;
+    return state.agents.find((a) => a.id === activeTrackingOrder.agentId) || null;
   }, [activeTrackingOrder, state.agents]);
 
-  // Customer order history (excludes the simulated 30 day seed list for cleanliness, or shows recent customer orders)
   const customerHistory = useMemo(() => {
-    return state.orders.filter(o => 
-      o.customerName === customerName && 
-      o.id.startsWith("ord-") // starts with ord- represents real-time created orders
+    return state.orders.filter(
+      (o) => o.customerName === customerName && o.id.startsWith("ord-")
     );
   }, [state.orders, customerName]);
 
   const activeCustomerOrders = useMemo(() => {
-    return state.orders.filter(o =>
-      o.customerName === customerName &&
-      o.status !== "delivered" &&
-      o.status !== "failed" &&
-      o.status !== "returned"
+    return state.orders.filter(
+      (o) =>
+        o.customerName === customerName &&
+        o.status !== "delivered" &&
+        o.status !== "failed" &&
+        o.status !== "returned"
     );
   }, [state.orders, customerName]);
 
-  // Status index for tracking vertical stepper progress
   const getStatusIndex = (status: Order["status"]) => {
-    const statuses: Order["status"][] = ["placed", "confirmed", "dispatched", "out_for_delivery", "delivered"];
-    const idx = statuses.indexOf(status);
-    return idx === -1 ? 4 : idx; // if returned or failed, just keep highlights
+    const order: Order["status"][] = [
+      "placed",
+      "confirmed",
+      "dispatched",
+      "out_for_delivery",
+      "delivered",
+    ];
+    const idx = order.indexOf(status);
+    return idx === -1 ? 4 : idx;
   };
 
   const handleFeedbackSubmit = (e: React.FormEvent) => {
@@ -192,10 +237,10 @@ export default function CustomerApp() {
     if (ratingOrder) {
       submitFeedback(ratingOrder, selectedRating);
       setFeedbackSuccess(true);
-      setTimeout(() => {
+      window.setTimeout(() => {
         setRatingOrder(null);
         setFeedbackSuccess(false);
-      }, 2000);
+      }, 1500);
     }
   };
 
@@ -204,375 +249,398 @@ export default function CustomerApp() {
     if (returnOrder) {
       requestReturn(returnOrder, returnReason);
       setReturnSuccess(true);
-      setTimeout(() => {
+      window.setTimeout(() => {
         setReturnOrder(null);
         setReturnSuccess(false);
-      }, 2000);
+      }, 1500);
     }
   };
 
-  // SSG Hydration check
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => setHydrated(true));
     return () => window.cancelAnimationFrame(frame);
   }, []);
-
   if (!hydrated) return null;
 
   return (
-    <div className="logi-store-page min-h-screen bg-slate-950 text-slate-100 font-sans relative">
-      <div className="logi-stage-grid" />
-
-      <header className="store-topbar sticky top-0 z-40 border-b border-slate-800">
-        <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Top bar */}
+      <header className="sticky top-0 z-30 border-b border-border bg-background">
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-pink-500 text-slate-950">
-              <ShoppingBag className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black text-white">LogiTrack Store</p>
-              <p className="hidden text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500 sm:block">
-                Customer delivery workspace
-              </p>
-            </div>
+            <span className="text-sm font-semibold tracking-tight text-foreground">
+              LogiTrack
+            </span>
+            <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              Store
+            </span>
           </div>
 
-          <nav className="store-tabs" aria-label="Customer sections">
-            {[
-              { id: "shop", label: "Shop" },
-              { id: "cart", label: "Cart", count: cartItemCount },
-              { id: "tracking", label: "Track", count: activeCustomerOrders.length },
-              { id: "history", label: "Orders" },
-            ].map(item => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setActiveTab(item.id as typeof activeTab)}
-                className={`store-tab ${activeTab === item.id ? "is-active" : ""}`}
-              >
-                <span>{item.label}</span>
-                {item.count ? <span className="store-tab-count">{item.count}</span> : null}
-              </button>
-            ))}
+          <nav aria-label="Customer sections" className="flex items-center gap-1">
+            {TABS.map((t) => {
+              const count =
+                t.id === "cart"
+                  ? cartItemCount
+                  : t.id === "tracking"
+                  ? activeCustomerOrders.length
+                  : 0;
+              const isActive = activeTab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setActiveTab(t.id)}
+                  className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors focus-visible:outline-none ${
+                    isActive
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <span>{t.label}</span>
+                  {count > 0 ? (
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {count}
+                    </span>
+                  ) : null}
+                  {isActive ? (
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-2 -bottom-px h-px bg-foreground"
+                    />
+                  ) : null}
+                </button>
+              );
+            })}
           </nav>
 
-          <Link href="/" className="store-secondary hidden sm:inline-flex">
+          <Link
+            href="/"
+            className="hidden text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline sm:inline"
+          >
             Exit
           </Link>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-7">
-        <section className="store-hero reveal-item">
-          <div className="max-w-3xl">
-            <p className="store-eyebrow">Same data stream as dispatch</p>
-            <h1>Shop, checkout, and track the handoff without leaving the store.</h1>
-            <p>
-              Browse the live catalog, confirm the Pune delivery point, and follow the
-              assigned agent as the owner console updates the same order.
-            </p>
-          </div>
-          <div className="store-hero-metrics">
-            <div>
-              <span>{state.products.length}</span>
-              <p>products</p>
-            </div>
-            <div>
-              <span>{cartItemCount}</span>
-              <p>in cart</p>
-            </div>
-            <div>
-              <span>{activeCustomerOrders.length}</span>
-              <p>active</p>
-            </div>
-          </div>
-        </section>
+      {/* Toast notice */}
+      {cartNotice ? (
+        <div className="pointer-events-none fixed left-1/2 top-20 z-40 -translate-x-1/2 border border-border bg-card px-4 py-2 text-xs text-foreground shadow-sm">
+          {cartNotice}
+        </div>
+      ) : null}
 
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
         {(activeTab === "shop" || activeTab === "cart") && (
-          <section className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-            <div className="store-panel reveal-item p-4 sm:p-5 [animation-delay:90ms]">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                <div>
-                  <p className="store-eyebrow">Catalog</p>
-                  <h2 className="text-xl font-black tracking-tight text-white">
-                    Fresh essentials ready for dispatch
-                  </h2>
-                </div>
+          <section className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
+            {/* Catalog */}
+            <div>
+              <header>
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  Catalog
+                </p>
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                  Fresh essentials, ready to dispatch
+                </h1>
+              </header>
 
-                <label className="store-search">
-                  <Search className="size-4" />
-                  <input
-                    type="search"
-                    value={productQuery}
-                    onChange={(e) => setProductQuery(e.target.value)}
-                    placeholder="Search product, SKU, or category"
-                  />
-                </label>
+              <div className="mt-6 flex flex-col gap-3 border-y border-border py-3 sm:flex-row sm:items-center sm:gap-4">
+                <input
+                  type="search"
+                  value={productQuery}
+                  onChange={(e) => setProductQuery(e.target.value)}
+                  placeholder="Search product, SKU, or category"
+                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+                <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+                  {CATEGORIES.map((c) => {
+                    const isOn = selectedCategory === c;
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setSelectedCategory(c)}
+                        className={`text-xs underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline ${
+                          isOn
+                            ? "font-medium text-foreground underline"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
-                {categories.map(cat => (
+              {filteredProducts.length === 0 ? (
+                <div className="mt-8 border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                  No products match that filter.{" "}
                   <button
-                    key={cat.name}
                     type="button"
-                    onClick={() => setSelectedCategory(cat.name)}
-                    className={`store-chip flex items-center gap-2 pl-2 pr-3.5 py-1 ${selectedCategory === cat.name ? "is-active" : ""}`}
+                    onClick={() => {
+                      setSelectedCategory("All");
+                      setProductQuery("");
+                    }}
+                    className="text-foreground underline underline-offset-4"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={cat.image}
-                      alt={cat.name}
-                      className="w-5 h-5 rounded-full object-cover border border-white/10 shrink-0"
-                    />
-                    <span>{cat.name}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredProducts.map(p => {
-                  const isLowStock = p.stock > 0 && p.stock < 10;
-
-                  return (
-                    <article key={p.id} className="store-product-card">
-                      <div className="store-product-media">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.image} alt={p.name} />
-                        <span className={`store-stock ${isLowStock ? "is-risk" : ""}`}>
-                          {p.stock > 0 ? `${p.stock} left` : "Sold out"}
-                        </span>
-                      </div>
-                      <div className="store-product-copy">
-                        <p>{p.category}</p>
-                        <h3>{p.name}</h3>
-                        <span>{p.sku}</span>
-                      </div>
-                      <div className="store-product-actions">
-                        <strong>₹{p.price.toFixed(2)}</strong>
-                        {p.stock > 0 ? (
-                          <button type="button" onClick={() => addToCart(p)}>
-                            Add
-                          </button>
-                        ) : (
-                          <span className="store-unavailable">Out</span>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-
-              {filteredProducts.length === 0 && (
-                <div className="store-empty mt-4">
-                  <ShoppingBag className="size-6" />
-                  <p>No products match that filter.</p>
-                  <button type="button" onClick={() => { setSelectedCategory("All"); setProductQuery(""); }}>
-                    Reset filters
+                    Reset
                   </button>
                 </div>
+              ) : (
+                <ul className="mt-6 divide-y divide-border border-b border-border">
+                  {filteredProducts.map((p) => {
+                    const inCart = cart.find((c) => c.product.id === p.id);
+                    const lowStock = p.stock > 0 && p.stock < 10;
+                    return (
+                      <li
+                        key={p.id}
+                        className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 py-4"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                            {p.category}
+                          </p>
+                          <h3 className="mt-0.5 text-sm font-medium text-foreground">
+                            {p.name}
+                          </h3>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {p.stock <= 0
+                              ? "Out of stock"
+                              : lowStock
+                              ? `Only ${p.stock} left`
+                              : `${p.stock} in stock`}
+                          </p>
+                        </div>
+                        <div className="flex items-baseline gap-5">
+                          <p className="font-mono text-sm tabular-nums text-foreground">
+                            ₹{p.price.toFixed(2)}
+                          </p>
+                          {p.stock > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => addToCart(p)}
+                              className="text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
+                            >
+                              {inCart ? `Add another →` : "Add →"}
+                            </button>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              Sold out
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
 
-            <aside className="store-rail reveal-item p-4 sm:p-5 [animation-delay:160ms]">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="store-eyebrow">Checkout rail</p>
-                  <h2 className="text-lg font-black text-white">Your cart</h2>
-                </div>
-                <span className="store-cart-count">{cartItemCount}</span>
-              </div>
+            {/* Cart rail */}
+            <aside className="border border-border bg-card p-5 sm:p-6 lg:sticky lg:top-20 lg:self-start">
+              <header className="flex items-baseline justify-between gap-3">
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  Cart
+                </p>
+                <p className="text-xs tabular-nums text-muted-foreground">
+                  {cartItemCount} {cartItemCount === 1 ? "item" : "items"}
+                </p>
+              </header>
 
-              {cart.length > 0 ? (
-                <div className="mt-4 space-y-2">
-                  {cart.map(item => (
-                    <div key={item.product.id} className="store-cart-row">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.product.image} alt={item.product.name} />
+              {cart.length === 0 ? (
+                <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
+                  Your cart is empty. Add items from the catalog.
+                </p>
+              ) : (
+                <ul className="mt-4 flex flex-col border-t border-border">
+                  {cart.map((item) => (
+                    <li
+                      key={item.product.id}
+                      className="flex items-baseline justify-between gap-3 border-b border-border py-3 last:border-b-0"
+                    >
                       <div className="min-w-0 flex-1">
-                        <p>{item.product.name}</p>
-                        <span>₹{item.product.price.toFixed(2)} each</span>
-                      </div>
-                      <div className="store-qty">
-                        <button type="button" onClick={() => updateCartQty(item.product.id, -1)}>-</button>
-                        <strong>{item.quantity}</strong>
-                        <button type="button" onClick={() => updateCartQty(item.product.id, 1)}>+</button>
+                        <p className="truncate text-sm text-foreground">
+                          {item.product.name}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          <button
+                            type="button"
+                            onClick={() => updateCartQty(item.product.id, -1)}
+                            className="px-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:underline"
+                            aria-label="Decrease"
+                          >
+                            −
+                          </button>
+                          <span className="mx-1 tabular-nums text-foreground">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateCartQty(item.product.id, 1)}
+                            className="px-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:underline"
+                            aria-label="Increase"
+                          >
+                            +
+                          </button>
+                          <span className="ml-2">
+                            × ₹{item.product.price.toFixed(2)}
+                          </span>
+                        </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => removeFromCart(item.product.id)}
-                        className="store-remove"
-                        aria-label={`Remove ${item.product.name}`}
+                        className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:underline"
                       >
-                        <Trash2 className="size-4" />
+                        Remove
                       </button>
-                    </div>
+                    </li>
                   ))}
-                </div>
-              ) : (
-                <div className="store-empty mt-4">
-                  <ShoppingBag className="size-7" />
-                  <p>Your cart is ready for the first item.</p>
-                  <button type="button" onClick={() => setActiveTab("shop")}>
-                    Browse products
-                  </button>
-                </div>
+                </ul>
               )}
 
-              <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
-                <div className={`promise-card signal-${customerPromise.stockSignal}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="store-eyebrow">Promise Engine</p>
-                      <h3>{customerPromise.title}</h3>
-                    </div>
-                    <span>{customerPromise.etaRange}</span>
-                  </div>
-                  <p>{customerPromise.summary}</p>
-                  <div className="promise-meta">
-                    <strong>{customerPromise.confidence}% confidence</strong>
-                    <small>{customerPromise.hubName}</small>
-                  </div>
-                  <ul>
-                    {customerPromise.reasons.map((reason) => (
-                      <li key={reason}>{reason}</li>
-                    ))}
-                  </ul>
-                </div>
+              {/* Delivery promise */}
+              <div className="mt-5 border-t border-border pt-4">
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  Estimated delivery
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-foreground">
+                  {customerPromise.title}{" "}
+                  <span className="text-muted-foreground">
+                    · {customerPromise.etaRange}
+                  </span>
+                </p>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                  {customerPromise.summary}
+                </p>
+                <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {customerPromise.confidence}%
+                  </span>{" "}
+                  confidence · {customerPromise.hubName}
+                </p>
+              </div>
 
-                <div className="store-field">
-                  <label>Customer</label>
+              {/* Identity */}
+              <div className="mt-5 flex flex-col gap-3 border-t border-border pt-4">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Name</span>
                   <input
                     type="text"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
+                    className="border-b border-border bg-transparent pb-1 text-sm text-foreground focus:border-foreground focus:outline-none"
                   />
-                </div>
-                <div className="store-field">
-                  <label>Phone</label>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Phone</span>
                   <input
                     type="text"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="border-b border-border bg-transparent pb-1 font-mono text-sm text-foreground focus:border-foreground focus:outline-none"
                   />
-                </div>
-                <div className="store-field">
-                  <label>Delivery address</label>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Address</span>
                   <input
                     type="text"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
+                    className="border-b border-border bg-transparent pb-1 text-sm text-foreground focus:border-foreground focus:outline-none"
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="store-field">
-                    <label>Latitude</label>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      value={lat}
-                      onChange={(e) => setLat(parseFloat(e.target.value) || 18.52)}
-                    />
-                  </div>
-                  <div className="store-field">
-                    <label>Longitude</label>
-                    <input
-                      type="number"
-                      step="0.0001"
-                      value={lng}
-                      onChange={(e) => setLng(parseFloat(e.target.value) || 73.85)}
-                    />
-                  </div>
-                </div>
+                </label>
               </div>
 
-              <div className="store-total mt-5">
-                <div>
-                  <span>Subtotal</span>
-                  <strong>₹{cartTotal.toFixed(2)}</strong>
-                </div>
-                <div>
-                  <span>Delivery</span>
-                  <strong className="text-emerald-300">Free</strong>
-                </div>
-                <div className="is-grand">
-                  <span>Total</span>
-                  <strong>₹{cartTotal.toFixed(2)}</strong>
-                </div>
+              {/* Total + checkout */}
+              <div className="mt-5 flex items-baseline justify-between gap-3 border-t border-border pt-4">
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="font-mono text-base font-semibold tabular-nums text-foreground">
+                  ₹{cartTotal.toFixed(2)}
+                </p>
               </div>
 
               <button
                 type="button"
                 disabled={cart.length === 0}
-                onClick={() => setShowSandboxModal(true)}
-                className="store-checkout"
+                onClick={() => setShowPaymentModal(true)}
+                className="mt-4 inline-flex w-full items-center justify-center rounded-none border border-foreground bg-foreground py-2.5 text-sm font-medium text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:border-border disabled:bg-transparent disabled:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
-                <CreditCard className="size-4" />
-                Secure sandbox checkout
+                Sandbox checkout →
               </button>
             </aside>
           </section>
         )}
 
         {activeTab === "tracking" && (
-          <section className="mt-5 grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="store-panel reveal-item p-5">
+          <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+            <div>
               <button
                 type="button"
                 onClick={() => setActiveTab("shop")}
-                className="store-secondary mb-5"
+                className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:underline"
               >
-                <ArrowLeft className="size-3.5" /> Back to store
+                ← Back to store
               </button>
 
               {activeTrackingOrder ? (
-                <div>
-                  <div className="flex flex-col gap-3 border-b border-white/10 pb-5 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="store-eyebrow">Tracking</p>
-                      <h2 className="text-2xl font-black text-white">
-                        Order {activeTrackingOrder.id}
-                      </h2>
-                      <p className="mt-2 text-sm text-slate-400">
-                        {activeTrackingOrder.address}
-                      </p>
-                    </div>
-                    <span className="store-status-badge">
-                      {activeTrackingOrder.status.replace(/_/g, " ")}
-                    </span>
-                  </div>
+                <div className="mt-6">
+                  <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                    Tracking
+                  </p>
+                  <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                    Order {activeTrackingOrder.id.replace("ord-", "#")}
+                  </h1>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    {activeTrackingOrder.address}
+                  </p>
+                  <p className="mt-1 text-sm capitalize text-foreground">
+                    {activeTrackingOrder.status.replace(/_/g, " ")}
+                  </p>
 
-                  <div className="mt-5 grid gap-3">
-                    {[
-                      { label: "Order placed", desc: "Store received the cart." },
-                      { label: "Confirmed", desc: "Inventory reserved and assigned." },
-                      { label: "Dispatched", desc: "Package picked up from the store." },
-                      { label: "Out for delivery", desc: "Agent is heading to your address." },
-                      { label: "Delivered", desc: "Package handed over successfully." }
-                    ].map((step, idx) => {
+                  <ol className="mt-6 flex flex-col border-t border-border">
+                    {TRACKING_STEPS.map((step, idx) => {
                       const activeIdx = getStatusIndex(activeTrackingOrder.status);
                       const isDone = idx <= activeIdx;
                       const isCurrent = idx === activeIdx;
-
                       return (
-                        <div key={step.label} className={`tracking-step ${isDone ? "is-done" : ""} ${isCurrent ? "is-current" : ""}`}>
-                          <span>{isDone ? <Check className="size-3" /> : idx + 1}</span>
-                          <div>
-                            <p>{step.label}</p>
-                            <small>{step.desc}</small>
+                        <li
+                          key={step.key}
+                          className="flex items-baseline gap-4 border-b border-border py-3 last:border-b-0"
+                        >
+                          <span
+                            className={`w-8 shrink-0 font-mono text-xs tabular-nums ${
+                              isDone ? "text-foreground" : "text-muted-foreground"
+                            }`}
+                          >
+                            {String(idx + 1).padStart(2, "0")}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className={`text-sm ${
+                                isCurrent
+                                  ? "font-semibold text-foreground"
+                                  : isDone
+                                  ? "text-foreground"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {step.label}
+                            </p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {step.desc}
+                            </p>
                           </div>
-                        </div>
+                        </li>
                       );
                     })}
-                  </div>
+                  </ol>
 
                   {activeTrackingOrder.status === "delivered" && (
-                    <div className="mt-5 rounded-lg border border-emerald-400/20 bg-emerald-400/10 p-4">
-                      <h3 className="flex items-center gap-2 text-sm font-black text-emerald-300">
-                        <CheckCircle2 className="size-4" /> Order delivered
-                      </h3>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
-                        Rate the delivery agent after handoff so the owner console receives the feedback.
+                    <div className="mt-6 border-t border-border pt-4">
+                      <p className="text-sm leading-relaxed text-foreground">
+                        Delivered. Rate the experience so the owner console picks it up.
                       </p>
                       {!activeTrackingOrder.deliveryRating ? (
                         <button
@@ -581,31 +649,38 @@ export default function CustomerApp() {
                             setRatingOrder(activeTrackingOrder.id);
                             setSelectedRating(5);
                           }}
-                          className="store-secondary mt-3"
+                          className="mt-3 text-sm font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"
                         >
-                          Rate experience
+                          Rate experience →
                         </button>
                       ) : (
-                        <p className="mt-3 text-xs font-bold text-slate-400">
-                          Rated <span className="text-amber-300">{activeTrackingOrder.deliveryRating} / 5</span>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Rated{" "}
+                          <span className="font-medium text-foreground">
+                            {activeTrackingOrder.deliveryRating} / 5
+                          </span>
                         </p>
                       )}
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="store-empty min-h-80">
-                  <Play className="size-8" />
-                  <p>No order is selected for tracking.</p>
+                <div className="mt-6 border border-dashed border-border p-6 text-sm text-muted-foreground">
+                  No order is selected for tracking.{" "}
                   {activeCustomerOrders.length > 0 ? (
                     <button
                       type="button"
                       onClick={() => setTrackingOrderId(activeCustomerOrders[0].id)}
+                      className="text-foreground underline underline-offset-4"
                     >
-                      Track latest order
+                      Track latest
                     </button>
                   ) : (
-                    <button type="button" onClick={() => setActiveTab("shop")}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("shop")}
+                      className="text-foreground underline underline-offset-4"
+                    >
                       Start a delivery
                     </button>
                   )}
@@ -613,16 +688,15 @@ export default function CustomerApp() {
               )}
             </div>
 
-            <div className="store-panel reveal-item overflow-hidden p-0 [animation-delay:120ms]">
-              <div className="flex items-center justify-between border-b border-white/10 p-4">
-                <div>
-                  <p className="store-eyebrow">Live map</p>
-                  <h2 className="text-base font-black text-white">Agent and delivery point</h2>
-                </div>
-                <Truck className="size-5 text-slate-400" />
+            {/* Live map — single visual proof */}
+            <div className="border border-border bg-card">
+              <div className="border-b border-border px-5 py-3">
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  Live position
+                </p>
               </div>
               {activeTrackingOrder && trackingAgent ? (
-                <div className="h-[520px] min-h-80 w-full bg-slate-950">
+                <div className="h-[420px] w-full bg-background lg:h-[520px]">
                   <DeliveryMap
                     agents={[trackingAgent]}
                     orders={[activeTrackingOrder]}
@@ -631,9 +705,10 @@ export default function CustomerApp() {
                   />
                 </div>
               ) : (
-                <div className="store-empty min-h-[520px]">
-                  <MapPin className="size-8" />
-                  <p>Map activates after the order has an assigned agent.</p>
+                <div className="flex h-[420px] items-center justify-center bg-background lg:h-[520px]">
+                  <p className="text-sm text-muted-foreground">
+                    Map activates once an agent is assigned.
+                  </p>
                 </div>
               )}
             </div>
@@ -641,246 +716,352 @@ export default function CustomerApp() {
         )}
 
         {activeTab === "history" && (
-          <section className="store-panel reveal-item mt-5 p-5">
-            <div className="flex flex-col gap-3 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <section>
+            <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 border-b border-border pb-5">
               <div>
-                <p className="store-eyebrow">Order history</p>
-                <h2 className="text-2xl font-black text-white">Returns and receipts</h2>
+                <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  Past orders
+                </p>
+                <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                  Receipts and returns
+                </h1>
               </div>
-              <button type="button" onClick={() => setActiveTab("shop")} className="store-secondary">
-                Continue shopping
+              <button
+                type="button"
+                onClick={() => setActiveTab("shop")}
+                className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:underline"
+              >
+                Continue shopping →
               </button>
-            </div>
+            </header>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {customerHistory.map(order => (
-                <article key={order.id} className="store-order-card">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-black text-white">Order {order.id}</p>
-                      <span className="font-mono text-[11px] text-slate-500">
-                        {new Date(order.timestamp).toLocaleString()}
-                      </span>
-                    </div>
-                    <span className={`store-status-badge ${order.status === "returned" ? "is-danger" : ""}`}>
-                      {order.status}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 space-y-1 border-t border-white/10 pt-4 text-xs text-slate-400">
-                    {order.products.map((p, idx) => (
-                      <p key={idx}>
-                        {p.name} <span className="font-bold text-white">x{p.quantity}</span>
+            {customerHistory.length === 0 ? (
+              <p className="mt-6 text-sm text-muted-foreground">
+                You haven&apos;t placed any orders yet.{" "}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("shop")}
+                  className="text-foreground underline underline-offset-4"
+                >
+                  Shop the catalog
+                </button>
+                .
+              </p>
+            ) : (
+              <ul className="mt-6 flex flex-col">
+                {customerHistory.map((order) => (
+                  <li
+                    key={order.id}
+                    className="border-b border-border py-6 last:border-b-0"
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                      <p className="font-mono text-sm text-foreground">
+                        {order.id.replace("ord-", "#")}
                       </p>
-                    ))}
-                    <p className="pt-2">
-                      Total paid: <strong className="font-mono text-white">₹{order.total.toFixed(2)}</strong>
-                    </p>
-                  </div>
-
-                  {order.status === "delivered" && !order.returnRequested && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setReturnOrder(order.id);
-                        setReturnReason("Item damaged on arrival");
-                      }}
-                      className="store-return"
-                    >
-                      Request return
-                    </button>
-                  )}
-
-                  {order.returnRequested && (
-                    <div className="mt-4 flex items-start gap-2 rounded-lg border border-rose-400/20 bg-rose-400/10 p-3 text-xs text-rose-300">
-                      <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-                      <span>Refund completed. Reason: &quot;{order.returnReason}&quot;</span>
+                      <p className="text-xs capitalize text-muted-foreground">
+                        {order.status} ·{" "}
+                        <span className="font-mono tabular-nums">
+                          {new Date(order.timestamp).toLocaleDateString()}
+                        </span>
+                      </p>
                     </div>
-                  )}
-                </article>
-              ))}
 
-              {customerHistory.length === 0 && (
-                <div className="store-empty md:col-span-2">
-                  <ShoppingBag className="size-8" />
-                  <p>You have not placed any orders yet.</p>
-                  <button type="button" onClick={() => setActiveTab("shop")}>
-                    Shop the catalog
-                  </button>
-                </div>
-              )}
-            </div>
+                    <ul className="mt-3 flex flex-col gap-0.5 text-sm text-muted-foreground">
+                      {order.products.map((p, idx) => (
+                        <li key={idx}>
+                          <span className="tabular-nums">{p.quantity}</span>{" "}
+                          × <span className="text-foreground">{p.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+                      <p className="font-mono text-sm tabular-nums text-foreground">
+                        ₹{order.total.toFixed(2)}
+                      </p>
+                      {isWithinReturnWindow(order) ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReturnOrder(order.id);
+                            setReturnReason("Item damaged on arrival");
+                          }}
+                          className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:underline"
+                        >
+                          Request return →{" "}
+                          <span className="text-[11px] tabular-nums text-muted-foreground">
+                            {hoursRemainingForReturn(order)}h left
+                          </span>
+                        </button>
+                      ) : order.status === "delivered" && !order.returnRequested ? (
+                        <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                          Return window closed
+                        </p>
+                      ) : null}
+                    </div>
+
+                    {order.paymentReference ? (
+                      <p className="mt-2 text-[11px] tabular-nums text-muted-foreground">
+                        {order.paymentProvider === "stripe" ? "Stripe" : "Razorpay"} ·{" "}
+                        <span className="font-mono">{order.paymentReference}</span>
+                      </p>
+                    ) : null}
+
+                    {order.returnRequested ? (
+                      <p className="mt-3 text-xs italic text-muted-foreground">
+                        Refund completed. Reason: &quot;{order.returnReason}&quot;
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         )}
       </main>
 
-      {/* --- SANDBOX PAYMENT DIALOG GATEWAY MODAL --- */}
-      {showSandboxModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl relative">
-            <h3 className="text-base font-bold text-white flex items-center gap-1.5">
-              <CreditCard className="w-4 h-4 text-pink-500" /> Razorpay Sandbox Gateway
-            </h3>
-            <p className="text-[10px] text-slate-400 leading-relaxed leading-normal">
-              You are simulating a payment checkout. No actual money will be transacted. This sandbox environment completes payments instantly.
-            </p>
-            <div className="p-3 bg-slate-950 rounded-lg border border-slate-850 flex justify-between items-center text-xs">
-              <span className="text-slate-400">Merchant Charge:</span>
-              <span className="font-mono font-bold text-white">₹{cartTotal.toFixed(2)}</span>
+      {/* Payment modal — minimal, no fake card placeholders */}
+      {showPaymentModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-md border border-border bg-card p-6 sm:p-7">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                Sandbox checkout
+              </p>
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-accent">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                Test mode
+              </span>
             </div>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+              Confirm your order
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              No real money moves. This routes through{" "}
+              <span className="font-medium text-foreground">
+                {paymentProvider === "stripe" ? "Stripe" : "Razorpay"} test mode
+              </span>{" "}
+              and settles instantly.
+            </p>
 
-            <form onSubmit={handlePaymentSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[9px] text-slate-400 font-bold uppercase">Card Number</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="4111 •••• •••• 1111"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-pink-500 font-mono"
-                />
+            <fieldset className="mt-5 border-y border-border py-4">
+              <legend className="px-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                Payment gateway
+              </legend>
+              <div role="radiogroup" aria-label="Payment provider" className="mt-2 grid grid-cols-2 gap-2">
+                {(["razorpay", "stripe"] as const).map((p) => {
+                  const on = paymentProvider === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => setPaymentProvider(p)}
+                      className={`flex flex-col items-start gap-0.5 border px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        on
+                          ? "border-foreground bg-foreground/5 text-foreground"
+                          : "border-border bg-transparent text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span className="text-sm font-semibold">
+                        {p === "razorpay" ? "Razorpay" : "Stripe"}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {p === "razorpay" ? "rzp_test_*" : "pk_test_*"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-[9px] text-slate-400 font-bold uppercase">Expiry Date</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="MM / YY"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-pink-500 font-mono"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[9px] text-slate-400 font-bold uppercase">CVV Code</label>
-                  <input
-                    type="password"
-                    required
-                    maxLength={3}
-                    placeholder="•••"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-pink-500 font-mono"
-                  />
-                </div>
-              </div>
+            </fieldset>
 
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowSandboxModal(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-850 hover:bg-slate-800 text-xs font-semibold text-slate-300 border border-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-xs shadow-md shadow-pink-600/10"
-                >
-                  Pay Demo Total
-                </button>
+            <dl className="mt-4 flex flex-col gap-2 border-b border-border pb-4 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Items</dt>
+                <dd className="tabular-nums text-foreground">{cartItemCount}</dd>
               </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Delivery to</dt>
+                <dd className="max-w-[60%] truncate text-right text-foreground">
+                  {address}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Total</dt>
+                <dd className="font-mono font-semibold tabular-nums text-foreground">
+                  ₹{cartTotal.toFixed(2)}
+                </dd>
+              </div>
+            </dl>
+
+            <form
+              onSubmit={handlePaymentSubmit}
+              className="mt-5 flex items-center justify-end gap-5"
+            >
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                disabled={paymentProcessing}
+                className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:underline"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={paymentProcessing}
+                className="inline-flex items-center border border-foreground bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                {paymentProcessing
+                  ? `Authorising ${paymentProvider === "stripe" ? "Stripe" : "Razorpay"}…`
+                  : `Pay ₹${cartTotal.toFixed(2)} →`}
+              </button>
             </form>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* --- FEEDBACK STAR RATING MODAL --- */}
-      {ratingOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-white flex items-center gap-1.5">
-              <Star className="w-4 h-4 text-amber-400" /> Rate Delivery Experience
-            </h3>
+      {/* Rating modal */}
+      {ratingOrder ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-md border border-border bg-card p-6 sm:p-7">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              Rate delivery
+            </p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+              Order {ratingOrder.replace("ord-", "#")}
+            </h2>
+
             {feedbackSuccess ? (
-              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-xs font-semibold flex flex-col items-center justify-center gap-2">
-                <CheckCircle2 className="w-8 h-8" />
-                <span>Thank you for your rating!</span>
-              </div>
+              <p className="mt-4 text-sm text-foreground">
+                Thanks — the owner console has your rating.
+              </p>
             ) : (
-              <form onSubmit={handleFeedbackSubmit} className="space-y-4">
-                <p className="text-[10px] text-slate-400 leading-normal">
-                  How was your delivery service for order <strong className="text-white font-mono">{ratingOrder}</strong>? Rate from 1 to 5 stars.
+              <form onSubmit={handleFeedbackSubmit} className="mt-5">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  How was the delivery? Pick a score from 1 to 5.
                 </p>
-                <div className="flex justify-center gap-3 py-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setSelectedRating(star)}
-                      className="p-1 transition-all"
-                    >
-                      <Star className={`w-8 h-8 ${star <= selectedRating ? "fill-amber-400 text-amber-400 scale-110" : "text-slate-600"}`} />
-                    </button>
-                  ))}
+                <div
+                  role="radiogroup"
+                  aria-label="Rating"
+                  className="mt-4 flex gap-1"
+                >
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    const on = star <= selectedRating;
+                    return (
+                      <button
+                        key={star}
+                        type="button"
+                        role="radio"
+                        aria-checked={selectedRating === star}
+                        onClick={() => setSelectedRating(star)}
+                        className={`inline-flex h-9 w-9 items-center justify-center border text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                          on
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border bg-transparent text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {star}
+                      </button>
+                    );
+                  })}
                 </div>
-                <div className="flex justify-end gap-3">
+                <div className="mt-5 flex items-center justify-end gap-5">
                   <button
                     type="button"
                     onClick={() => setRatingOrder(null)}
-                    className="px-4 py-2 rounded-lg bg-slate-800 text-xs font-semibold text-slate-350"
+                    className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:underline"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs"
+                    className="inline-flex items-center border border-foreground bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
-                    Submit Rating
+                    Submit rating →
                   </button>
                 </div>
               </form>
             )}
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* --- RETURN REQUEST DIALOG MODAL --- */}
-      {returnOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-base font-bold text-white flex items-center gap-1.5">
-              <ShieldAlert className="w-4 h-4 text-rose-500" /> Raise Return Request
-            </h3>
+      {/* Return modal */}
+      {returnOrder ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/85 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-md border border-border bg-card p-6 sm:p-7">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              Return request
+            </p>
+            <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+              Order {returnOrder.replace("ord-", "#")}
+            </h2>
+
             {returnSuccess ? (
-              <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-center text-xs font-semibold flex flex-col items-center justify-center gap-2">
-                <CheckCircle2 className="w-8 h-8 text-rose-400" />
-                <span>Return request processed and refunded!</span>
-              </div>
+              <p className="mt-4 text-sm text-foreground">
+                Return processed. Refund queued.
+              </p>
             ) : (
-              <form onSubmit={handleReturnSubmit} className="space-y-4">
-                <p className="text-[10px] text-slate-400 leading-normal">
-                  You are raising a return for order <strong className="text-white font-mono">{returnOrder}</strong>. Please state the reason for return below.
+              <form onSubmit={handleReturnSubmit} className="mt-5">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Tell us what went wrong. The refund is automatic in the demo.
                 </p>
-                <div className="space-y-1">
-                  <label className="text-[9px] text-slate-400 font-bold uppercase">Reason for return</label>
+
+                <label className="mt-4 flex flex-col gap-1.5">
+                  <span className="text-xs text-muted-foreground">Reason</span>
                   <select
                     value={returnReason}
                     onChange={(e) => setReturnReason(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-300 focus:outline-none font-semibold cursor-pointer"
+                    className="border-b border-border bg-transparent pb-1 text-sm text-foreground focus:border-foreground focus:outline-none"
                   >
-                    <option value="Item damaged on arrival">Item damaged on arrival</option>
-                    <option value="Incorrect products shipped">Incorrect products shipped</option>
-                    <option value="Quality not up to expectations">Quality not up to expectations</option>
-                    <option value="Late delivery / No longer needed">Late delivery / No longer needed</option>
+                    <option value="Item damaged on arrival">
+                      Item damaged on arrival
+                    </option>
+                    <option value="Incorrect products shipped">
+                      Incorrect products shipped
+                    </option>
+                    <option value="Quality not up to expectations">
+                      Quality not up to expectations
+                    </option>
+                    <option value="Late delivery / No longer needed">
+                      Late delivery / No longer needed
+                    </option>
                   </select>
-                </div>
-                <div className="flex justify-end gap-3 pt-2">
+                </label>
+
+                <div className="mt-5 flex items-center justify-end gap-5">
                   <button
                     type="button"
                     onClick={() => setReturnOrder(null)}
-                    className="px-4 py-2 rounded-lg bg-slate-800 text-xs font-semibold text-slate-350"
+                    className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:underline"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs"
+                    className="inline-flex items-center border border-foreground bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
-                    Confirm Return & Refund
+                    Confirm return →
                   </button>
                 </div>
               </form>
             )}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

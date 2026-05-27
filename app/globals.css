@@ -52,19 +52,20 @@
 }
 
 :root {
-  --logi-paper: oklch(0.12 0.015 128);
-  --logi-paper-2: oklch(0.16 0.018 128);
-  --logi-surface: oklch(0.19 0.018 128);
-  --logi-surface-2: oklch(0.23 0.016 128);
-  --logi-ink: oklch(0.96 0.006 120);
-  --logi-ink-2: oklch(0.83 0.012 124);
-  --logi-muted: oklch(0.68 0.018 128);
-  --logi-rule: oklch(0.36 0.018 128 / 0.55);
-  --logi-accent: oklch(0.78 0.12 158);
-  --logi-accent-strong: oklch(0.68 0.14 156);
-  --logi-risk: oklch(0.78 0.12 78);
-  --logi-danger: oklch(0.66 0.18 28);
-  --logi-focus: oklch(0.86 0.11 154);
+  --logi-paper: oklch(0.97 0.015 35);
+  --logi-paper-2: oklch(0.94 0.015 35);
+  --logi-surface: oklch(0.91 0.015 35);
+  --logi-surface-2: oklch(0.86 0.015 35);
+  --logi-ink: oklch(0.22 0.012 35);
+  --logi-ink-2: oklch(0.38 0.012 35);
+  --logi-muted: oklch(0.56 0.012 35);
+  --logi-rule: oklch(0.82 0.015 35);
+  --logi-accent: oklch(0.62 0.16 35);
+  --logi-accent-strong: oklch(0.56 0.18 35);
+  --logi-risk: oklch(0.62 0.16 35);
+  --logi-danger: oklch(0.58 0.20 20);
+  --logi-focus: oklch(0.60 0.20 35);
+  
   --logi-radius-card: 8px;
   --logi-radius-control: 7px;
   --logi-radius-shell: 28px;
@@ -72,72 +73,91 @@
   --logi-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --logi-dur-short: 180ms;
   --logi-dur-medium: 420ms;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+
+  --background: var(--logi-paper);
+  --foreground: var(--logi-ink);
+  --card: var(--logi-paper-2);
+  --card-foreground: var(--logi-ink);
+  --popover: var(--logi-paper);
+  --popover-foreground: var(--logi-ink);
+  --primary: var(--logi-ink);
+  --primary-foreground: var(--logi-paper);
+  --secondary: var(--logi-surface);
+  --secondary-foreground: var(--logi-ink);
+  --muted: var(--logi-surface);
+  --muted-foreground: var(--logi-muted);
+  --accent: var(--logi-surface);
+  --accent-foreground: var(--logi-ink);
+  --destructive: var(--logi-danger);
+  --border: var(--logi-rule);
+  --input: var(--logi-rule);
+  --ring: var(--logi-focus);
+  
+  --chart-1: oklch(0.62 0.16 35);
+  --chart-2: oklch(0.58 0.14 45);
+  --chart-3: oklch(0.54 0.12 55);
+  --chart-4: oklch(0.50 0.10 65);
+  --chart-5: oklch(0.46 0.08 75);
+  
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: var(--logi-paper);
+  --sidebar-foreground: var(--logi-ink);
+  --sidebar-primary: var(--logi-ink);
+  --sidebar-primary-foreground: var(--logi-paper);
+  --sidebar-accent: var(--logi-surface);
+  --sidebar-accent-foreground: var(--logi-ink);
+  --sidebar-border: var(--logi-rule);
+  --sidebar-ring: var(--logi-focus);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --logi-paper: oklch(0.18 0.012 35);
+  --logi-paper-2: oklch(0.22 0.012 35);
+  --logi-surface: oklch(0.26 0.012 35);
+  --logi-surface-2: oklch(0.30 0.012 35);
+  --logi-ink: oklch(0.94 0.012 35);
+  --logi-ink-2: oklch(0.82 0.012 35);
+  --logi-muted: oklch(0.65 0.012 35);
+  --logi-rule: oklch(0.30 0.012 35);
+  --logi-accent: oklch(0.62 0.16 35);
+  --logi-accent-strong: oklch(0.66 0.18 35);
+  --logi-risk: oklch(0.62 0.16 35);
+  --logi-danger: oklch(0.58 0.20 20);
+  --logi-focus: oklch(0.60 0.20 35);
+
+  --background: var(--logi-paper);
+  --foreground: var(--logi-ink);
+  --card: var(--logi-paper-2);
+  --card-foreground: var(--logi-ink);
+  --popover: var(--logi-paper);
+  --popover-foreground: var(--logi-ink);
+  --primary: var(--logi-ink);
+  --primary-foreground: var(--logi-paper);
+  --secondary: var(--logi-surface);
+  --secondary-foreground: var(--logi-ink);
+  --muted: var(--logi-surface);
+  --muted-foreground: var(--logi-muted);
+  --accent: var(--logi-surface);
+  --accent-foreground: var(--logi-ink);
+  --destructive: var(--logi-danger);
+  --border: var(--logi-rule);
+  --input: var(--logi-rule);
+  --ring: var(--logi-focus);
+  
+  --chart-1: oklch(0.62 0.16 35);
+  --chart-2: oklch(0.58 0.14 45);
+  --chart-3: oklch(0.54 0.12 55);
+  --chart-4: oklch(0.50 0.10 65);
+  --chart-5: oklch(0.46 0.08 75);
+  
+  --sidebar: var(--logi-paper);
+  --sidebar-foreground: var(--logi-ink);
+  --sidebar-primary: var(--logi-accent);
+  --sidebar-primary-foreground: var(--logi-paper);
+  --sidebar-accent: var(--logi-surface);
+  --sidebar-accent-foreground: var(--logi-ink);
+  --sidebar-border: var(--logi-rule);
+  --sidebar-ring: var(--logi-focus);
 }
 
 @layer base {
@@ -164,7 +184,7 @@
     isolation: isolate;
     overflow-x: clip;
     background:
-      linear-gradient(120deg, oklch(0.13 0.018 128) 0%, oklch(0.1 0.012 128) 48%, oklch(0.13 0.014 128) 100%);
+      linear-gradient(120deg, oklch(0.965 0.005 50) 0%, oklch(0.94 0.006 50) 48%, oklch(0.96 0.005 50) 100%);
     color: var(--logi-ink);
   }
 
@@ -181,8 +201,8 @@
   .logi-command-page::before,
   .logi-stage-grid {
     background:
-      linear-gradient(to right, oklch(0.96 0.006 120 / 0.045) 1px, transparent 1px),
-      linear-gradient(to bottom, oklch(0.96 0.006 120 / 0.032) 1px, transparent 1px);
+      linear-gradient(to right, oklch(0.20 0.010 35 / 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, oklch(0.20 0.010 35 / 0.032) 1px, transparent 1px);
     background-size: 56px 56px;
     mask-image: linear-gradient(to bottom, black, transparent 86%);
   }
@@ -190,8 +210,8 @@
   .logi-command-page::after,
   .logi-mobile-stage::before {
     background:
-      linear-gradient(122deg, transparent 0 37%, oklch(0.78 0.12 158 / 0.11) 37.2%, transparent 37.7% 58%, oklch(0.78 0.12 78 / 0.08) 58.2%, transparent 58.7%),
-      linear-gradient(180deg, transparent 0%, oklch(0.08 0.01 128 / 0.72) 100%);
+      linear-gradient(122deg, transparent 0 37%, oklch(0.64 0.165 28 / 0.11) 37.2%, transparent 37.7% 58%, oklch(0.64 0.165 28 / 0.08) 58.2%, transparent 58.7%),
+      linear-gradient(180deg, transparent 0%, oklch(0.965 0.005 50 / 0.4) 100%);
   }
 
   .logi-command-page > * {
@@ -201,13 +221,13 @@
 
   .logi-command-sidebar {
     border-color: var(--logi-rule);
-    background: oklch(0.095 0.012 128 / 0.9);
-    box-shadow: inset -1px 0 0 oklch(0.96 0.006 120 / 0.04);
+    background: oklch(0.96 0.005 50 / 0.95);
+    box-shadow: inset -1px 0 0 oklch(0.20 0.010 35 / 0.04);
   }
 
   .logi-command-topbar {
     border-color: var(--logi-rule);
-    background: oklch(0.12 0.015 128 / 0.78);
+    background: oklch(0.965 0.005 50 / 0.85);
     backdrop-filter: blur(18px);
   }
 
@@ -244,7 +264,7 @@
     isolation: isolate;
     overflow-x: clip;
     background:
-      linear-gradient(125deg, oklch(0.13 0.015 128) 0%, oklch(0.095 0.012 128) 52%, oklch(0.14 0.018 128) 100%);
+      linear-gradient(125deg, oklch(0.965 0.005 50) 0%, oklch(0.94 0.006 50) 52%, oklch(0.965 0.005 50) 100%);
     color: var(--logi-ink);
   }
 
@@ -254,8 +274,8 @@
     pointer-events: none;
     content: "";
     background:
-      linear-gradient(128deg, transparent 0 34%, oklch(0.78 0.12 78 / 0.09) 34.2%, transparent 34.8% 66%, oklch(0.78 0.12 158 / 0.1) 66.2%, transparent 66.7%),
-      linear-gradient(180deg, transparent 0%, oklch(0.08 0.01 128 / 0.76) 100%);
+      linear-gradient(128deg, transparent 0 34%, oklch(0.64 0.165 28 / 0.09) 34.2%, transparent 34.8% 66%, oklch(0.64 0.165 28 / 0.1) 66.2%, transparent 66.7%),
+      linear-gradient(180deg, transparent 0%, oklch(0.965 0.005 50 / 0.4) 100%);
   }
 
   .logi-store-page > * {
@@ -264,7 +284,7 @@
   }
 
   .store-topbar {
-    background: oklch(0.105 0.012 128 / 0.82);
+    background: oklch(0.96 0.005 50 / 0.9);
     border-color: var(--logi-rule);
     backdrop-filter: blur(18px);
   }
@@ -276,7 +296,7 @@
     gap: 4px;
     border: 1px solid var(--logi-rule);
     border-radius: 999px;
-    background: oklch(0.08 0.01 128 / 0.48);
+    background: oklch(0.08 0.01 40 / 0.48);
     overflow-x: auto;
     padding: 4px;
   }
@@ -298,7 +318,7 @@
 
   .store-tab.is-active {
     background: var(--logi-risk);
-    color: oklch(0.12 0.018 128);
+    color: oklch(0.965 0.005 50);
   }
 
   .store-tab-count,
@@ -308,7 +328,7 @@
     height: 22px;
     place-items: center;
     border-radius: 999px;
-    background: oklch(0.96 0.006 120 / 0.12);
+    background: oklch(0.20 0.010 35 / 0.12);
     color: var(--logi-ink);
     font-family: var(--font-geist-mono);
     font-size: 11px;
@@ -316,8 +336,8 @@
   }
 
   .store-tab.is-active .store-tab-count {
-    background: oklch(0.12 0.018 128 / 0.2);
-    color: oklch(0.12 0.018 128);
+    background: oklch(0.12 0.018 40 / 0.2);
+    color: oklch(0.965 0.005 50);
   }
 
   .store-secondary,
@@ -333,7 +353,7 @@
     border-radius: var(--logi-radius-control);
     border: 1px solid var(--logi-rule);
     padding: 0 12px;
-    background: oklch(0.96 0.006 120 / 0.055);
+    background: oklch(0.20 0.010 35 / 0.055);
     color: var(--logi-ink-2);
     font-size: 12px;
     font-weight: 900;
@@ -341,7 +361,7 @@
 
   .store-secondary:hover,
   .store-empty button:hover {
-    border-color: oklch(0.78 0.12 78 / 0.42);
+    border-color: oklch(0.64 0.165 28 / 0.42);
     color: var(--logi-ink);
   }
 
@@ -351,12 +371,12 @@
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-card);
     background:
-      linear-gradient(135deg, oklch(0.2 0.018 128 / 0.88), oklch(0.12 0.014 128 / 0.9)),
-      oklch(0.14 0.014 128 / 0.85);
+      linear-gradient(135deg, oklch(0.2 0.018 40 / 0.88), oklch(0.12 0.014 40 / 0.9)),
+      oklch(0.14 0.014 40 / 0.85);
     padding: 22px;
     box-shadow:
-      0 22px 62px oklch(0.03 0.006 128 / 0.34),
-      inset 0 1px 0 oklch(0.96 0.006 120 / 0.06);
+      0 22px 62px oklch(0.20 0.010 35 / 0.34),
+      inset 0 1px 0 oklch(0.20 0.010 35 / 0.06);
   }
 
   .store-hero h1 {
@@ -390,21 +410,14 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    align-self: center;
   }
 
   .store-hero-metrics div {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
     min-width: 0;
-    min-height: 84px;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-card);
-    background: oklch(0.08 0.01 128 / 0.28);
-    padding: 12px 8px;
+    background: oklch(0.96 0.005 50 / 0.5);
+    padding: 12px;
   }
 
   .store-hero-metrics span {
@@ -413,17 +426,15 @@
     font-family: var(--font-geist-mono);
     font-size: 24px;
     font-weight: 950;
-    line-height: 1;
   }
 
   .store-hero-metrics p {
-    margin-top: 6px;
+    margin-top: 4px;
     color: var(--logi-muted);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    line-height: 1.2;
   }
 
   .store-panel,
@@ -433,11 +444,11 @@
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-card);
     background:
-      linear-gradient(180deg, oklch(0.96 0.006 120 / 0.052), oklch(0.96 0.006 120 / 0.02)),
-      oklch(0.11 0.012 128 / 0.86);
+      linear-gradient(180deg, oklch(0.20 0.010 35 / 0.052), oklch(0.20 0.010 35 / 0.02)),
+      oklch(0.11 0.012 40 / 0.86);
     box-shadow:
-      0 16px 44px oklch(0.03 0.006 128 / 0.24),
-      inset 0 1px 0 oklch(0.96 0.006 120 / 0.05);
+      0 16px 44px oklch(0.20 0.010 35 / 0.24),
+      inset 0 1px 0 oklch(0.20 0.010 35 / 0.05);
   }
 
   .store-rail {
@@ -452,7 +463,7 @@
     gap: 10px;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-control);
-    background: oklch(0.08 0.01 128 / 0.38);
+    background: oklch(0.965 0.005 50 / 0.5);
     padding: 0 12px;
     color: var(--logi-muted);
   }
@@ -471,7 +482,7 @@
 
   .store-search input::placeholder,
   .store-field input::placeholder {
-    color: oklch(0.68 0.018 128 / 0.66);
+    color: oklch(0.68 0.018 40 / 0.66);
   }
 
   .store-chip {
@@ -479,7 +490,7 @@
     white-space: nowrap;
     border: 1px solid var(--logi-rule);
     border-radius: 999px;
-    background: oklch(0.08 0.01 128 / 0.34);
+    background: oklch(0.08 0.01 40 / 0.34);
     padding: 0 12px;
     color: var(--logi-muted);
     font-size: 12px;
@@ -487,8 +498,8 @@
   }
 
   .store-chip.is-active {
-    border-color: oklch(0.78 0.12 78 / 0.58);
-    background: oklch(0.78 0.12 78 / 0.16);
+    border-color: oklch(0.64 0.165 28 / 0.58);
+    background: oklch(0.64 0.165 28 / 0.16);
     color: var(--logi-ink);
   }
 
@@ -504,14 +515,14 @@
 
   .store-product-card:hover {
     transform: translateY(-2px);
-    border-color: oklch(0.78 0.12 78 / 0.42);
+    border-color: oklch(0.64 0.165 28 / 0.42);
   }
 
   .store-product-media {
     position: relative;
     overflow: hidden;
     border-radius: var(--logi-radius-control);
-    background: oklch(0.08 0.01 128);
+    background: oklch(0.94 0.006 50);
     aspect-ratio: 4 / 3;
   }
 
@@ -532,7 +543,7 @@
     right: 8px;
     bottom: 8px;
     border-radius: 999px;
-    background: oklch(0.08 0.01 128 / 0.76);
+    background: oklch(0.965 0.005 50 / 0.4);
     padding: 5px 8px;
     color: var(--logi-accent);
     font-size: 10px;
@@ -579,7 +590,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    border-top: 1px solid oklch(0.96 0.006 120 / 0.08);
+    border-top: 1px solid oklch(0.20 0.010 35 / 0.08);
     padding-top: 10px;
   }
 
@@ -591,9 +602,9 @@
 
   .store-product-actions button,
   .store-checkout {
-    border-color: oklch(0.78 0.12 78 / 0.44);
+    border-color: oklch(0.64 0.165 28 / 0.44);
     background: var(--logi-risk);
-    color: oklch(0.12 0.018 128);
+    color: oklch(0.965 0.005 50);
   }
 
   .store-unavailable {
@@ -612,7 +623,7 @@
     gap: 10px;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-card);
-    background: oklch(0.08 0.01 128 / 0.28);
+    background: oklch(0.96 0.005 50 / 0.5);
     padding: 9px;
   }
 
@@ -645,7 +656,7 @@
     align-items: center;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-control);
-    background: oklch(0.96 0.006 120 / 0.05);
+    background: oklch(0.20 0.010 35 / 0.05);
   }
 
   .store-qty button {
@@ -689,7 +700,7 @@
     min-height: 38px;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-control);
-    background: oklch(0.08 0.01 128 / 0.38);
+    background: oklch(0.965 0.005 50 / 0.5);
     padding: 0 10px;
   }
 
@@ -698,7 +709,7 @@
     gap: 10px;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-card);
-    background: oklch(0.08 0.01 128 / 0.28);
+    background: oklch(0.96 0.005 50 / 0.5);
     padding: 12px;
   }
 
@@ -718,7 +729,7 @@
   }
 
   .store-total .is-grand {
-    border-top: 1px solid oklch(0.96 0.006 120 / 0.08);
+    border-top: 1px solid oklch(0.20 0.010 35 / 0.08);
     padding-top: 10px;
     color: var(--logi-ink);
     font-size: 14px;
@@ -733,7 +744,7 @@
   .store-checkout:disabled {
     cursor: not-allowed;
     border-color: var(--logi-rule);
-    background: oklch(0.96 0.006 120 / 0.06);
+    background: oklch(0.20 0.010 35 / 0.06);
     color: var(--logi-muted);
     opacity: 0.72;
   }
@@ -744,9 +755,9 @@
     place-items: center;
     align-content: center;
     gap: 12px;
-    border: 1px dashed oklch(0.96 0.006 120 / 0.16);
+    border: 1px dashed oklch(0.20 0.010 35 / 0.16);
     border-radius: var(--logi-radius-card);
-    background: oklch(0.08 0.01 128 / 0.24);
+    background: oklch(0.08 0.01 40 / 0.24);
     padding: 24px;
     color: var(--logi-muted);
     text-align: center;
@@ -761,7 +772,7 @@
     align-items: start;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-card);
-    background: oklch(0.08 0.01 128 / 0.25);
+    background: oklch(0.08 0.01 40 / 0.25);
     padding: 12px;
   }
 
@@ -779,14 +790,14 @@
   }
 
   .tracking-step.is-done > span {
-    border-color: oklch(0.78 0.12 78 / 0.42);
+    border-color: oklch(0.64 0.165 28 / 0.42);
     background: var(--logi-risk);
-    color: oklch(0.12 0.018 128);
+    color: oklch(0.965 0.005 50);
   }
 
   .tracking-step.is-current {
-    border-color: oklch(0.78 0.12 78 / 0.5);
-    background: oklch(0.78 0.12 78 / 0.08);
+    border-color: oklch(0.64 0.165 28 / 0.5);
+    background: oklch(0.64 0.165 28 / 0.08);
   }
 
   .tracking-step p {
@@ -806,9 +817,9 @@
   .store-status-badge {
     display: inline-flex;
     align-items: center;
-    border: 1px solid oklch(0.78 0.12 78 / 0.35);
+    border: 1px solid oklch(0.64 0.165 28 / 0.35);
     border-radius: 999px;
-    background: oklch(0.78 0.12 78 / 0.1);
+    background: oklch(0.64 0.165 28 / 0.1);
     padding: 5px 9px;
     color: var(--logi-risk);
     font-size: 10px;
@@ -862,15 +873,15 @@
 
   .autopilot-tower {
     overflow: hidden;
-    border: 1px solid oklch(0.78 0.12 158 / 0.28);
+    border: 1px solid oklch(0.64 0.165 28 / 0.28);
     border-radius: var(--logi-radius-card);
     background:
-      linear-gradient(135deg, oklch(0.78 0.12 158 / 0.12), transparent 34%),
-      linear-gradient(180deg, oklch(0.96 0.006 120 / 0.06), oklch(0.96 0.006 120 / 0.018)),
-      oklch(0.105 0.012 128 / 0.9);
+      linear-gradient(135deg, oklch(0.64 0.165 28 / 0.12), transparent 34%),
+      linear-gradient(180deg, oklch(0.20 0.010 35 / 0.06), oklch(0.20 0.010 35 / 0.018)),
+      oklch(0.105 0.012 40 / 0.9);
     box-shadow:
-      0 22px 64px oklch(0.03 0.006 128 / 0.3),
-      inset 0 1px 0 oklch(0.96 0.006 120 / 0.06);
+      0 22px 64px oklch(0.20 0.010 35 / 0.3),
+      inset 0 1px 0 oklch(0.20 0.010 35 / 0.06);
     padding: 18px;
   }
 
@@ -910,7 +921,7 @@
     justify-items: start;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-card);
-    background: oklch(0.08 0.01 128 / 0.32);
+    background: oklch(0.08 0.01 40 / 0.32);
     padding: 14px;
     color: var(--logi-accent);
   }
@@ -945,7 +956,7 @@
     gap: 8px;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-control);
-    background: oklch(0.08 0.01 128 / 0.24);
+    background: oklch(0.08 0.01 40 / 0.24);
     padding: 9px;
   }
 
@@ -981,16 +992,16 @@
     gap: 12px;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-card);
-    background: oklch(0.08 0.01 128 / 0.36);
+    background: oklch(0.08 0.01 40 / 0.36);
     padding: 14px;
   }
 
   .autopilot-card.urgency-high {
-    border-color: oklch(0.78 0.12 78 / 0.4);
+    border-color: oklch(0.64 0.165 28 / 0.4);
   }
 
   .autopilot-card.urgency-medium {
-    border-color: oklch(0.78 0.12 158 / 0.32);
+    border-color: oklch(0.64 0.165 28 / 0.32);
   }
 
   .autopilot-card-head,
@@ -1023,7 +1034,7 @@
   }
 
   .autopilot-recommendation {
-    border-left: 2px solid oklch(0.78 0.12 158 / 0.42);
+    border-left: 2px solid oklch(0.64 0.165 28 / 0.42);
     padding-left: 10px;
     color: var(--logi-ink-2);
     font-weight: 800;
@@ -1037,7 +1048,7 @@
   .autopilot-score-list div {
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-control);
-    background: oklch(0.96 0.006 120 / 0.04);
+    background: oklch(0.20 0.010 35 / 0.04);
     padding: 8px;
   }
 
@@ -1087,7 +1098,7 @@
 
   .autopilot-card-foot {
     align-items: center;
-    border-top: 1px solid oklch(0.96 0.006 120 / 0.08);
+    border-top: 1px solid oklch(0.20 0.010 35 / 0.08);
     padding-top: 10px;
   }
 
@@ -1096,11 +1107,11 @@
     min-height: 32px;
     align-items: center;
     gap: 7px;
-    border: 1px solid oklch(0.78 0.12 158 / 0.42);
+    border: 1px solid oklch(0.64 0.165 28 / 0.42);
     border-radius: var(--logi-radius-control);
     background: var(--logi-accent);
     padding: 0 10px;
-    color: oklch(0.1 0.012 128);
+    color: oklch(0.94 0.006 50);
     font-size: 11px;
     font-weight: 950;
   }
@@ -1111,7 +1122,7 @@
     place-items: center;
     align-content: center;
     gap: 10px;
-    border: 1px dashed oklch(0.96 0.006 120 / 0.18);
+    border: 1px dashed oklch(0.20 0.010 35 / 0.18);
     border-radius: var(--logi-radius-card);
     color: var(--logi-muted);
     text-align: center;
@@ -1139,11 +1150,11 @@
   .promise-card {
     display: grid;
     gap: 12px;
-    border: 1px solid oklch(0.78 0.12 158 / 0.3);
+    border: 1px solid oklch(0.64 0.165 28 / 0.3);
     border-radius: var(--logi-radius-card);
     background:
-      linear-gradient(135deg, oklch(0.78 0.12 158 / 0.12), transparent 36%),
-      oklch(0.08 0.01 128 / 0.38);
+      linear-gradient(135deg, oklch(0.64 0.165 28 / 0.12), transparent 36%),
+      oklch(0.965 0.005 50 / 0.5);
     padding: 14px;
   }
 
@@ -1171,7 +1182,7 @@
     gap: 10px;
     border: 1px solid var(--logi-rule);
     border-radius: var(--logi-radius-control);
-    background: oklch(0.96 0.006 120 / 0.04);
+    background: oklch(0.20 0.010 35 / 0.04);
     padding: 9px;
   }
 
@@ -1195,19 +1206,19 @@
 
   .agent-action-card button {
     min-height: 36px;
-    border: 1px solid oklch(0.78 0.12 158 / 0.42);
+    border: 1px solid oklch(0.64 0.165 28 / 0.42);
     border-radius: var(--logi-radius-control);
     background: var(--logi-accent);
-    color: oklch(0.1 0.012 128);
+    color: oklch(0.94 0.006 50);
     font-size: 12px;
     font-weight: 950;
   }
 
   .promise-card.signal-risk {
-    border-color: oklch(0.78 0.12 78 / 0.42);
+    border-color: oklch(0.64 0.165 28 / 0.42);
     background:
-      linear-gradient(135deg, oklch(0.78 0.12 78 / 0.12), transparent 36%),
-      oklch(0.08 0.01 128 / 0.38);
+      linear-gradient(135deg, oklch(0.64 0.165 28 / 0.12), transparent 36%),
+      oklch(0.965 0.005 50 / 0.5);
   }
 
   .autopilot-tower {
@@ -1223,8 +1234,8 @@
     pointer-events: none;
     content: "";
     background:
-      linear-gradient(120deg, transparent 0 24%, oklch(0.78 0.12 158 / 0.12) 24.2%, transparent 24.7% 58%, oklch(0.78 0.12 78 / 0.09) 58.2%, transparent 58.8%),
-      linear-gradient(to right, oklch(0.96 0.006 120 / 0.035) 1px, transparent 1px);
+      linear-gradient(120deg, transparent 0 24%, oklch(0.64 0.165 28 / 0.12) 24.2%, transparent 24.7% 58%, oklch(0.64 0.165 28 / 0.09) 58.2%, transparent 58.8%),
+      linear-gradient(to right, oklch(0.20 0.010 35 / 0.035) 1px, transparent 1px);
     background-size: auto, 42px 42px;
     mask-image: linear-gradient(to bottom, black, transparent 86%);
   }
@@ -1244,9 +1255,9 @@
     display: inline-flex;
     min-height: 24px;
     align-items: center;
-    border: 1px solid oklch(0.78 0.12 158 / 0.34);
+    border: 1px solid oklch(0.64 0.165 28 / 0.34);
     border-radius: 999px;
-    background: oklch(0.78 0.12 158 / 0.1);
+    background: oklch(0.64 0.165 28 / 0.1);
     padding: 0 9px;
     color: var(--logi-accent);
     font-size: 10px;
@@ -1264,10 +1275,10 @@
   .autopilot-score,
   .autopilot-stat {
     min-width: 0;
-    border-color: oklch(0.96 0.006 120 / 0.12);
+    border-color: oklch(0.20 0.010 35 / 0.12);
     background:
-      linear-gradient(180deg, oklch(0.96 0.006 120 / 0.06), oklch(0.96 0.006 120 / 0.02)),
-      oklch(0.08 0.01 128 / 0.44);
+      linear-gradient(180deg, oklch(0.20 0.010 35 / 0.06), oklch(0.20 0.010 35 / 0.02)),
+      oklch(0.96 0.005 50 / 0.6);
   }
 
   .autopilot-stat {
@@ -1296,23 +1307,23 @@
 
   .autopilot-graph {
     position: relative;
-    border: 1px solid oklch(0.96 0.006 120 / 0.08);
+    border: 1px solid oklch(0.20 0.010 35 / 0.08);
     border-radius: var(--logi-radius-card);
-    background: oklch(0.08 0.01 128 / 0.28);
+    background: oklch(0.96 0.005 50 / 0.5);
     padding: 8px;
   }
 
   .autopilot-node {
     position: relative;
     overflow: hidden;
-    border-color: oklch(0.96 0.006 120 / 0.08);
+    border-color: oklch(0.20 0.010 35 / 0.08);
     background:
-      linear-gradient(180deg, oklch(0.96 0.006 120 / 0.052), transparent),
-      oklch(0.09 0.01 128 / 0.7);
+      linear-gradient(180deg, oklch(0.20 0.010 35 / 0.052), transparent),
+      oklch(0.96 0.005 50 / 0.8);
   }
 
   .autopilot-node.is-active {
-    border-color: oklch(0.78 0.12 158 / 0.28);
+    border-color: oklch(0.64 0.165 28 / 0.28);
   }
 
   .autopilot-node.is-active::before {
@@ -1328,8 +1339,8 @@
     overflow: hidden;
     min-width: 0;
     background:
-      linear-gradient(180deg, oklch(0.96 0.006 120 / 0.058), oklch(0.96 0.006 120 / 0.018)),
-      oklch(0.08 0.01 128 / 0.5);
+      linear-gradient(180deg, oklch(0.20 0.010 35 / 0.058), oklch(0.20 0.010 35 / 0.018)),
+      oklch(0.96 0.005 50 / 0.6);
     transition:
       transform 180ms var(--logi-ease-out),
       border-color 180ms var(--logi-ease-out),
@@ -1346,11 +1357,11 @@
   }
 
   .autopilot-card.is-primary {
-    border-color: oklch(0.78 0.12 158 / 0.45);
+    border-color: oklch(0.64 0.165 28 / 0.45);
     background:
-      linear-gradient(135deg, oklch(0.78 0.12 158 / 0.11), transparent 45%),
-      linear-gradient(180deg, oklch(0.96 0.006 120 / 0.065), oklch(0.96 0.006 120 / 0.018)),
-      oklch(0.08 0.01 128 / 0.55);
+      linear-gradient(135deg, oklch(0.64 0.165 28 / 0.11), transparent 45%),
+      linear-gradient(180deg, oklch(0.20 0.010 35 / 0.065), oklch(0.20 0.010 35 / 0.018)),
+      oklch(0.96 0.005 50 / 0.65);
   }
 
   .autopilot-card.urgency-high::before {
@@ -1359,7 +1370,7 @@
 
   .autopilot-card:hover {
     transform: translateY(-2px);
-    border-color: oklch(0.78 0.12 158 / 0.44);
+    border-color: oklch(0.64 0.165 28 / 0.44);
   }
 
   .autopilot-icon {
@@ -1368,23 +1379,23 @@
     height: 38px;
     flex: 0 0 auto;
     place-items: center;
-    border: 1px solid oklch(0.78 0.12 158 / 0.26);
+    border: 1px solid oklch(0.64 0.165 28 / 0.26);
     border-radius: var(--logi-radius-card);
-    background: oklch(0.78 0.12 158 / 0.1);
+    background: oklch(0.64 0.165 28 / 0.1);
     color: var(--logi-accent);
   }
 
   .urgency-high .autopilot-icon {
-    border-color: oklch(0.78 0.12 78 / 0.3);
-    background: oklch(0.78 0.12 78 / 0.12);
+    border-color: oklch(0.64 0.165 28 / 0.3);
+    background: oklch(0.64 0.165 28 / 0.12);
     color: var(--logi-risk);
   }
 
   .autopilot-recommendation {
-    border: 1px solid oklch(0.96 0.006 120 / 0.08);
-    border-left: 3px solid oklch(0.78 0.12 158 / 0.56);
+    border: 1px solid oklch(0.20 0.010 35 / 0.08);
+    border-left: 3px solid oklch(0.64 0.165 28 / 0.56);
     border-radius: var(--logi-radius-control);
-    background: oklch(0.96 0.006 120 / 0.04);
+    background: oklch(0.20 0.010 35 / 0.04);
     padding: 10px 11px;
   }
 
@@ -1412,9 +1423,9 @@
   }
 
   .autopilot-evidence li {
-    border: 1px solid oklch(0.96 0.006 120 / 0.08);
+    border: 1px solid oklch(0.20 0.010 35 / 0.08);
     border-radius: 999px;
-    background: oklch(0.96 0.006 120 / 0.04);
+    background: oklch(0.20 0.010 35 / 0.04);
     padding: 6px 9px 6px 18px;
     color: var(--logi-muted);
     font-size: 10px;
@@ -1448,7 +1459,7 @@
     height: 6px;
     overflow: hidden;
     border-radius: 999px;
-    background: oklch(0.96 0.006 120 / 0.07);
+    background: oklch(0.20 0.010 35 / 0.07);
   }
 
   .autopilot-meter i {
@@ -1460,7 +1471,7 @@
 
   .autopilot-action {
     flex: 0 0 auto;
-    box-shadow: 0 10px 26px oklch(0.78 0.12 158 / 0.12);
+    box-shadow: 0 10px 26px oklch(0.64 0.165 28 / 0.12);
   }
 
   .agent-action-card,
@@ -1468,9 +1479,9 @@
     position: relative;
     overflow: hidden;
     background:
-      linear-gradient(135deg, oklch(0.78 0.12 158 / 0.12), transparent 44%),
-      linear-gradient(180deg, oklch(0.96 0.006 120 / 0.052), oklch(0.96 0.006 120 / 0.018)),
-      oklch(0.08 0.01 128 / 0.46);
+      linear-gradient(135deg, oklch(0.64 0.165 28 / 0.12), transparent 44%),
+      linear-gradient(180deg, oklch(0.20 0.010 35 / 0.052), oklch(0.20 0.010 35 / 0.018)),
+      oklch(0.96 0.005 50 / 0.55);
   }
 
   .agent-action-card::before,
@@ -1622,16 +1633,16 @@
     border-radius: var(--logi-radius-shell);
     border-color: var(--logi-rule);
     background:
-      linear-gradient(180deg, oklch(0.18 0.018 128 / 0.96), oklch(0.12 0.014 128 / 0.98));
+      linear-gradient(180deg, oklch(0.18 0.018 40 / 0.96), oklch(0.12 0.014 40 / 0.98));
     box-shadow:
-      0 32px 80px oklch(0.03 0.006 128 / 0.5),
-      inset 0 1px 0 oklch(0.96 0.006 120 / 0.08);
+      0 32px 80px oklch(0.20 0.010 35 / 0.5),
+      inset 0 1px 0 oklch(0.20 0.010 35 / 0.08);
     animation: control-rise 520ms var(--logi-ease-out) both;
   }
 
   .logi-mobile-strip {
     border-color: var(--logi-rule);
-    background: oklch(0.1 0.012 128 / 0.82);
+    background: oklch(0.965 0.005 50 / 0.9);
     color: var(--logi-muted);
   }
 
@@ -1718,7 +1729,7 @@
 
   .logi-customer-shell .hover\:bg-pink-500:hover,
   .logi-store-page .hover\:bg-pink-500:hover {
-    background-color: oklch(0.84 0.13 78) !important;
+    background-color: oklch(0.70 0.145 28) !important;
   }
 
   .logi-command-page .text-indigo-400,
@@ -1743,41 +1754,41 @@
   .logi-agent-shell .border-indigo-500,
   .logi-agent-shell .border-indigo-500\/20,
   .logi-agent-shell .border-indigo-500\/40 {
-    border-color: oklch(0.78 0.12 158 / 0.38) !important;
+    border-color: oklch(0.64 0.165 28 / 0.38) !important;
   }
 
   .logi-customer-shell .border-pink-500,
   .logi-customer-shell .border-pink-500\/20,
   .logi-store-page .border-pink-500,
   .logi-store-page .border-pink-500\/20 {
-    border-color: oklch(0.78 0.12 78 / 0.42) !important;
+    border-color: oklch(0.64 0.165 28 / 0.42) !important;
   }
 
   .logi-command-page .bg-indigo-500\/10,
   .logi-agent-shell .bg-indigo-500\/10 {
-    background-color: oklch(0.78 0.12 158 / 0.1) !important;
+    background-color: oklch(0.64 0.165 28 / 0.1) !important;
   }
 
   .logi-customer-shell .bg-pink-500\/10,
   .logi-store-page .bg-pink-500\/10 {
-    background-color: oklch(0.78 0.12 78 / 0.11) !important;
+    background-color: oklch(0.64 0.165 28 / 0.11) !important;
   }
 
   .logi-command-page .bg-gradient-to-tr,
   .logi-command-page .bg-gradient-to-b {
-    background: linear-gradient(135deg, oklch(0.17 0.018 128), oklch(0.12 0.014 128)) !important;
+    background: linear-gradient(135deg, oklch(0.93 0.006 50), oklch(0.96 0.005 50)) !important;
   }
 
   .logi-command-page .bg-slate-950,
   .logi-mobile-stage .bg-slate-950,
   .logi-store-page .bg-slate-950 {
-    background-color: oklch(0.105 0.012 128 / 0.92) !important;
+    background-color: oklch(0.105 0.012 40 / 0.92) !important;
   }
 
   .logi-command-page .bg-slate-900,
   .logi-mobile-stage .bg-slate-900,
   .logi-store-page .bg-slate-900 {
-    background-color: oklch(0.15 0.014 128 / 0.9) !important;
+    background-color: oklch(0.15 0.014 40 / 0.9) !important;
   }
 
   .logi-command-page .border-slate-800,
@@ -1791,14 +1802,9 @@
 
   .ops-panel {
     border-radius: var(--logi-radius-card);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.024)),
-      rgba(13, 14, 11, 0.82);
-    box-shadow:
-      0 18px 52px rgba(0, 0, 0, 0.26),
-      inset 0 1px 0 rgba(255, 255, 255, 0.055);
-    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    background: var(--card);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.04);
   }
 
   .reveal-item {
@@ -1838,7 +1844,7 @@
     left: 18px;
     height: 1px;
     content: "";
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
     opacity: 0;
     transform: translateX(-18px);
     transition:
@@ -1848,7 +1854,7 @@
 
   .workspace-card:hover {
     transform: translateY(-2px);
-    background-color: rgba(18, 20, 16, 0.92);
+    background-color: var(--card);
   }
 
   .workspace-card:hover::after {
@@ -1858,16 +1864,12 @@
 
   .workspace-entry,
   .order-row,
-  .inventory-row,
   .hub-row,
   .quiet-stat {
-    border-radius: var(--logi-radius-card);
-    border: 1px solid rgba(255, 255, 255, 0.085);
-    background: rgba(0, 0, 0, 0.18);
-    transition:
-      transform 180ms var(--logi-ease-out),
-      border-color 180ms var(--logi-ease-out),
-      background-color 180ms var(--logi-ease-out);
+    border-radius: var(--logi-radius-control);
+    border: none;
+    background: var(--background);
+    transition: background-color 180ms var(--logi-ease-out);
   }
 
   .workspace-entry {
@@ -1878,12 +1880,9 @@
 
   .workspace-entry:hover,
   .order-row:hover,
-  .inventory-row:hover,
   .hub-row:hover,
   .quiet-stat:hover {
-    transform: translateY(-1px);
-    border-color: rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--secondary);
   }
 
   .quiet-stat {
@@ -1891,7 +1890,7 @@
   }
 
   .order-row {
-    padding: 12px;
+    padding: 14px 12px;
   }
 
   .inventory-row {
@@ -1899,10 +1898,10 @@
     align-items: center;
     gap: 10px;
     padding: 10px 0;
-    border-width: 0;
-    border-bottom-width: 1px;
+    border-bottom: 1px solid var(--border);
     border-radius: 0;
     background: transparent;
+    transition: none;
   }
 
   .inventory-row:last-child {
@@ -1910,7 +1909,6 @@
   }
 
   .inventory-row:hover {
-    transform: none;
     background: transparent;
   }
 
@@ -1920,15 +1918,15 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 11px;
+    padding: 12px;
   }
 
   .pipeline-step {
     min-height: 96px;
     border-radius: var(--logi-radius-card);
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    background: rgba(0, 0, 0, 0.18);
-    padding: 12px;
+    border: 1px solid var(--border);
+    background: var(--background);
+    padding: 14px;
     transition:
       transform 180ms var(--logi-ease-out),
       border-color 180ms var(--logi-ease-out),
@@ -1937,8 +1935,8 @@
 
   .pipeline-step:hover {
     transform: translateY(-2px);
-    border-color: rgba(167, 243, 208, 0.26);
-    background: rgba(0, 0, 0, 0.28);
+    border-color: var(--accent);
+    background: var(--card);
   }
 
   .metric-row {
@@ -1947,8 +1945,8 @@
     justify-content: space-between;
     gap: 12px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid var(--border);
+    background: var(--background);
     padding: 12px;
     transition:
       transform 180ms var(--logi-ease-out),
@@ -1958,8 +1956,8 @@
 
   .metric-row:hover {
     transform: translateX(2px);
-    border-color: rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.045);
+    border-color: var(--accent);
+    background: var(--card);
   }
 
   .signal-dot {
@@ -2037,7 +2035,7 @@
     background: linear-gradient(
       115deg,
       transparent 18%,
-      rgba(255, 255, 255, 0.08) 44%,
+      oklch(0.20 0.010 35 / 0.06) 44%,
       transparent 68%
     );
     opacity: 0;

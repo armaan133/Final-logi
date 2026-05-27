@@ -34,6 +34,9 @@ export interface Order {
   timestamp: string;
   deliveryRating: number | null;
   paymentStatus: "pending" | "paid" | "refunded";
+  paymentProvider?: "razorpay" | "stripe";
+  paymentReference?: string;
+  deliveredAt?: string;
   returnRequested: boolean;
   returnReason?: string;
   returnTimestamp?: string;
@@ -93,14 +96,14 @@ const INITIAL_WAREHOUSES: Warehouse[] = [
 ];
 
 const INITIAL_PRODUCTS: Product[] = [
-  { id: "p1", name: "Premium Arabica Coffee Beans", sku: "COF-ARA-001", price: 550, stock: 45, image: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400&q=80", category: "Beverages" },
-  { id: "p2", name: "Organic Almond Milk 1L", sku: "MLK-ALM-002", price: 250, stock: 12, image: "https://images.unsplash.com/photo-1568649929103-28ffbbeaca1e?w=400&q=80", category: "Dairy & Alternatives" },
-  { id: "p3", name: "Gluten-Free Sourdough Bread", sku: "BRD-SDR-003", price: 180, stock: 5, image: "https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=400&q=80", category: "Bakery" },
-  { id: "p4", name: "Cold-Pressed Extra Virgin Olive Oil", sku: "OIL-EVO-004", price: 1200, stock: 30, image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&q=80", category: "Pantry" },
-  { id: "p5", name: "Himalayan Pink Salt 500g", sku: "SLT-PNK-005", price: 99, stock: 80, image: "https://images.unsplash.com/photo-1614725350930-b3e34b9d073c?w=400&q=80", category: "Pantry" },
-  { id: "p6", name: "Dark Chocolate 72% Madagascar", sku: "CHO-MAD-006", price: 350, stock: 110, image: "https://images.unsplash.com/photo-1548907040-4d42b52125e0?w=400&q=80", category: "Snacks" },
-  { id: "p7", name: "Organic Green Tea (20 bags)", sku: "TEA-GRN-007", price: 220, stock: 6, image: "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&q=80", category: "Beverages" },
-  { id: "p8", name: "Eco-Friendly Dishwashing Liquid", sku: "HSH-DSH-008", price: 180, stock: 25, image: "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=400&q=80", category: "Household" },
+  { id: "p1", name: "Premium Arabica Coffee Beans", sku: "COF-ARA-001", price: 550, stock: 45, image: "https://images.unsplash.com/photo-1497636577773-f1231844b336?w=480&h=480&fit=crop&q=80", category: "Beverages" },
+  { id: "p2", name: "Organic Almond Milk 1L", sku: "MLK-ALM-002", price: 250, stock: 12, image: "https://images.unsplash.com/photo-1576186726115-4d51596775d1?w=480&h=480&fit=crop&q=80", category: "Dairy & Alternatives" },
+  { id: "p3", name: "Gluten-Free Sourdough Bread", sku: "BRD-SDR-003", price: 180, stock: 5, image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=480&h=480&fit=crop&q=80", category: "Bakery" },
+  { id: "p4", name: "Cold-Pressed Extra Virgin Olive Oil", sku: "OIL-EVO-004", price: 1200, stock: 30, image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=480&h=480&fit=crop&q=80", category: "Pantry" },
+  { id: "p5", name: "Himalayan Pink Salt 500g", sku: "SLT-PNK-005", price: 99, stock: 80, image: "https://images.unsplash.com/photo-1518110925495-b37b908a4d28?w=480&h=480&fit=crop&q=80", category: "Pantry" },
+  { id: "p6", name: "Dark Chocolate 72% Madagascar", sku: "CHO-MAD-006", price: 350, stock: 110, image: "https://images.unsplash.com/photo-1481391319762-47dff72954d9?w=480&h=480&fit=crop&q=80", category: "Snacks" },
+  { id: "p7", name: "Organic Green Tea (20 bags)", sku: "TEA-GRN-007", price: 220, stock: 6, image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=480&h=480&fit=crop&q=80", category: "Beverages" },
+  { id: "p8", name: "Eco-Friendly Dishwashing Liquid", sku: "HSH-DSH-008", price: 180, stock: 25, image: "https://images.unsplash.com/photo-1585421514738-01798e348b17?w=480&h=480&fit=crop&q=80", category: "Household" },
 ];
 
 const INITIAL_AGENTS: Agent[] = [
@@ -180,8 +183,11 @@ const generateHistoricalOrders = (): Order[] => {
         status: isReturn ? "returned" : "delivered",
         agentId: `a${Math.floor(Math.random() * 3) + 1}`,
         timestamp: orderDate.toISOString(),
+        deliveredAt: new Date(orderDate.getTime() + 6 * 60 * 60 * 1000).toISOString(),
         deliveryRating: rating,
         paymentStatus: isReturn ? "refunded" : "paid",
+        paymentProvider: Math.random() < 0.65 ? "razorpay" : "stripe",
+        paymentReference: `pay_${Math.random().toString(36).slice(2, 12)}`,
         returnRequested: isReturn,
         returnReason: isReturn ? "Item damaged on arrival" : undefined,
         returnTimestamp: isReturn ? new Date(orderDate.getTime() + 12 * 60 * 60 * 1000).toISOString() : undefined,
@@ -218,7 +224,7 @@ interface LogiTrackContextType {
   deleteProduct: (id: string) => void;
   restockProduct: (id: string, qty: number) => void;
   // Order actions
-  createOrder: (order: Omit<Order, "id" | "status" | "agentId" | "timestamp" | "deliveryRating" | "paymentStatus" | "returnRequested">) => string;
+  createOrder: (order: Omit<Order, "id" | "status" | "agentId" | "timestamp" | "deliveryRating" | "paymentStatus" | "returnRequested"> & { paymentProvider?: "razorpay" | "stripe" }) => string;
   updateOrderStatus: (orderId: string, status: Order["status"]) => void;
   assignAgent: (orderId: string, agentId: string) => void;
   autoAssignOrder: (orderId: string) => void;
@@ -452,7 +458,8 @@ export const LogiTrackProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                   if (orderIdx !== -1) {
                     fullyUpdatedOrders[orderIdx] = {
                       ...fullyUpdatedOrders[orderIdx],
-                      status: "delivered" as const
+                      status: "delivered" as const,
+                      deliveredAt: new Date().toISOString()
                     };
                   }
 
@@ -678,8 +685,10 @@ export const LogiTrackProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   // Order Actions
-  const createOrder = (o: Omit<Order, "id" | "status" | "agentId" | "timestamp" | "deliveryRating" | "paymentStatus" | "returnRequested">) => {
+  const createOrder = (o: Omit<Order, "id" | "status" | "agentId" | "timestamp" | "deliveryRating" | "paymentStatus" | "returnRequested"> & { paymentProvider?: "razorpay" | "stripe" }) => {
     const id = `ord-${Math.floor(1000 + Math.random() * 9000)}`;
+    const provider = o.paymentProvider ?? "razorpay";
+    const refPrefix = provider === "stripe" ? "pi_" : "pay_";
     const newOrder: Order = {
       ...o,
       id,
@@ -688,6 +697,8 @@ export const LogiTrackProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       timestamp: new Date().toISOString(),
       deliveryRating: null,
       paymentStatus: "paid", // sandbox payment completes instantly
+      paymentProvider: provider,
+      paymentReference: `${refPrefix}${Math.random().toString(36).slice(2, 12)}`,
       returnRequested: false
     };
 
@@ -754,7 +765,14 @@ export const LogiTrackProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
       return {
         ...prev,
-        orders: prev.orders.map(o => o.id === orderId ? { ...o, status } : o),
+        orders: prev.orders.map(o => {
+          if (o.id !== orderId) return o;
+          const next: Order = { ...o, status };
+          if (status === "delivered" && !o.deliveredAt) {
+            next.deliveredAt = new Date().toISOString();
+          }
+          return next;
+        }),
         agents: updatedAgents
       };
     });

@@ -13,17 +13,17 @@ modern-minimal
 - Content pages: Not currently present.
 
 ## Theme
-- `--logi-paper`: oklch(0.12 0.015 128)
-- `--logi-paper-2`: oklch(0.16 0.018 128)
-- `--logi-surface`: oklch(0.19 0.018 128)
-- `--logi-ink`: oklch(0.96 0.006 120)
-- `--logi-muted`: oklch(0.72 0.018 128)
-- `--logi-rule`: oklch(0.36 0.018 128 / 0.55)
-- `--logi-accent`: oklch(0.78 0.12 158)
-- `--logi-accent-strong`: oklch(0.68 0.14 156)
-- `--logi-risk`: oklch(0.78 0.12 78)
-- `--logi-danger`: oklch(0.66 0.18 28)
-- `--logi-focus`: oklch(0.86 0.11 154)
+- `--logi-paper`: oklch(14% 0.008 40)
+- `--logi-paper-2`: oklch(18% 0.010 40)
+- `--logi-surface`: oklch(22% 0.010 40)
+- `--logi-ink`: oklch(94% 0.006 40)
+- `--logi-muted`: oklch(72% 0.006 40)
+- `--logi-rule`: oklch(30% 0.008 40)
+- `--logi-accent`: #FC4C02
+- `--logi-accent-strong`: oklch(65% 0.19 55)
+- `--logi-risk`: #FC4C02
+- `--logi-danger`: oklch(66% 0.18 28)
+- `--logi-focus`: oklch(70% 0.19 55)
 
 ## Typography
 - Display: Geist, weight 800-900, normal.
@@ -46,7 +46,7 @@ modern-minimal
 - Secondary: hairline surface controls, same radius, muted text.
 
 ## What Pages Must Share
-- Dark paper, route-green primary, amber risk, red only for destructive states.
+- Dark midnight paper, signal orange primary, red only for destructive states.
 - Geist font stack.
 - Compact command-board density.
 - Buttons and rows with specific transitions, never broad cinematic motion.

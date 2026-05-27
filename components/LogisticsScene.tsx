@@ -8,8 +8,8 @@ type LogisticsSceneProps = {
   onlineAgents: number;
 };
 
-const routeColor = new THREE.Color("#77f2c3");
-const secondaryRouteColor = new THREE.Color("#93c5fd");
+const routeColor = new THREE.Color("#e8a84a");
+const secondaryRouteColor = new THREE.Color("#f0c878");
 
 function browserSupportsWebGL() {
   const probe = document.createElement("canvas");
@@ -58,7 +58,7 @@ function drawFallbackScene(
 
     ctx.save();
     ctx.globalAlpha = 0.18;
-    ctx.strokeStyle = "#5eead4";
+    ctx.strokeStyle = "#e0c8a0";
     ctx.lineWidth = 1;
     for (let x = 0; x < width; x += 64) {
       ctx.beginPath();
@@ -75,7 +75,7 @@ function drawFallbackScene(
     ctx.restore();
 
     ctx.save();
-    ctx.strokeStyle = "#a7f3d0";
+    ctx.strokeStyle = "#e8c898";
     ctx.lineWidth = 2;
     ctx.globalAlpha = 0.48;
     ctx.beginPath();
@@ -97,8 +97,8 @@ function drawFallbackScene(
 
     points.forEach((point, index) => {
       ctx.save();
-      ctx.fillStyle = index === 0 || index === points.length - 1 ? "#d9fff0" : "#9ff5d0";
-      ctx.shadowColor = "#6ee7b7";
+      ctx.fillStyle = index === 0 || index === points.length - 1 ? "#fff5e0" : "#f0e0c0";
+      ctx.shadowColor = "#d8a860";
       ctx.shadowBlur = 18;
       ctx.beginPath();
       ctx.arc(point.x, point.y, index === 0 || index === points.length - 1 ? 5 : 4, 0, Math.PI * 2);
@@ -124,8 +124,8 @@ function drawFallbackScene(
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(Math.sin(elapsed + index) * 0.22);
-      ctx.fillStyle = "#f8fafc";
-      ctx.shadowColor = "#86efac";
+      ctx.fillStyle = "#faf8f5";
+      ctx.shadowColor = "#e0c8a0";
       ctx.shadowBlur = 14;
       ctx.fillRect(-4, -3, 8, 6);
       ctx.restore();
@@ -207,15 +207,15 @@ export function LogisticsScene({ activeDeliveries, onlineAgents }: LogisticsScen
     const ambient = new THREE.AmbientLight(0xffffff, 0.38);
     scene.add(ambient);
 
-    const keyLight = new THREE.PointLight(0x9fffd2, 5.2, 32);
+    const keyLight = new THREE.PointLight(0xffe0a0, 5.2, 32);
     keyLight.position.set(-5, 7, 7);
     scene.add(keyLight);
 
-    const fillLight = new THREE.PointLight(0x8fb8ff, 2.1, 28);
+    const fillLight = new THREE.PointLight(0xffd0a0, 2.1, 28);
     fillLight.position.set(7, 4, -4);
     scene.add(fillLight);
 
-    const grid = new THREE.GridHelper(36, 36, 0x44624f, 0x29332e);
+    const grid = new THREE.GridHelper(36, 36, 0x6a5a4a, 0x4a3e32);
     const gridMaterial = grid.material as THREE.Material;
     gridMaterial.transparent = true;
     gridMaterial.opacity = 0.2;
@@ -233,8 +233,8 @@ export function LogisticsScene({ activeDeliveries, onlineAgents }: LogisticsScen
 
     const hubGeometry = new THREE.IcosahedronGeometry(0.22, 1);
     const hubMaterial = new THREE.MeshStandardMaterial({
-      color: 0xd8fff0,
-      emissive: 0x4ade80,
+      color: 0xfff0d8,
+      emissive: 0xe8a84a,
       emissiveIntensity: 0.58,
       metalness: 0.35,
       roughness: 0.32,
@@ -273,8 +273,8 @@ export function LogisticsScene({ activeDeliveries, onlineAgents }: LogisticsScen
 
     const packageGeometry = new THREE.BoxGeometry(0.34, 0.24, 0.34);
     const packageMaterial = new THREE.MeshStandardMaterial({
-      color: 0xf8fafc,
-      emissive: 0x70f6c6,
+      color: 0xfaf8f5,
+      emissive: 0xe8a84a,
       emissiveIntensity: 0.34,
       metalness: 0.12,
       roughness: 0.45,
@@ -308,7 +308,7 @@ export function LogisticsScene({ activeDeliveries, onlineAgents }: LogisticsScen
     const laneDots = new THREE.Points(
       laneDotsGeometry,
       new THREE.PointsMaterial({
-        color: 0xbdfbe2,
+        color: 0xf5deb8,
         opacity: 0.28,
         size: 0.045,
         transparent: true,
