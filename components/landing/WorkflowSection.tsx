@@ -37,14 +37,14 @@ export function WorkflowSection() {
   const SelectedIcon = selectedAgent.icon;
 
   return (
-    <section id="agents" className="relative border-t border-border px-4 py-20 sm:px-6 md:py-24 lg:px-8">
-      <div className="mx-auto max-w-[1180px]">
-        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <div className="max-w-[520px]">
+    <section id="agents" className="relative border-t border-border px-4 py-24 sm:px-6 md:py-28 lg:px-10">
+      <div className="mx-auto w-full max-w-[1280px]">
+        <div className="grid items-start gap-12 lg:grid-cols-[1fr_1fr] lg:gap-28">
+          <div className="max-w-[620px]">
             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Platform
             </p>
-            <h2 className="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+            <h2 className="mt-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl sm:leading-[1.04]">
               Deploy AI agents across all workflows
             </h2>
             <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-muted-foreground">
@@ -66,7 +66,7 @@ export function WorkflowSection() {
               </div>
             </div>
 
-            <article className="mt-7 rounded-xl border border-border bg-background p-4">
+            <article className="mt-8 rounded-xl border border-border bg-background p-4 sm:p-5">
               <div className="flex items-center gap-3">
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent ring-1 ring-accent/20">
                   <SelectedIcon className="size-4" />
@@ -79,7 +79,7 @@ export function WorkflowSection() {
             </article>
           </div>
 
-          <div className="flex flex-col gap-0 border-t border-border lg:ml-8 lg:mt-6">
+          <div className="flex w-full max-w-[640px] flex-col gap-0 border-t border-border lg:justify-self-end">
             {agents.map((agent) => {
               const isActive = activeAgent === agent.id;
               const Icon = agent.icon;
@@ -89,12 +89,12 @@ export function WorkflowSection() {
                   <button
                     type="button"
                     onClick={() => setActiveAgent(isActive ? "" : agent.id)}
-                    className="group flex w-full items-center gap-4 py-5 text-left transition-colors focus-visible:outline-none focus-visible:bg-secondary/50 rounded-lg px-2 -mx-2"
+                    className="group flex w-full items-center gap-4 rounded-lg px-1 py-5 text-left transition-colors focus-visible:bg-secondary/50 focus-visible:outline-none"
                   >
                     <span className={`flex size-8 shrink-0 items-center justify-center rounded-full ring-1 transition-all duration-300 ${isActive ? `bg-accent/10 text-accent ring-accent/20 scale-100 opacity-100` : "bg-secondary text-muted-foreground ring-border scale-90 opacity-70 group-hover:scale-100 group-hover:opacity-100 group-hover:text-foreground"}`}>
                       <Icon className="size-4" />
                     </span>
-                    <span className={`flex-1 text-2xl font-medium tracking-tight transition-colors duration-300 ${isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"}`}>
+                    <span className={`flex-1 text-[1.95rem] font-medium leading-tight tracking-tight transition-colors duration-300 ${isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"}`}>
                       {agent.name}
                     </span>
                   </button>
@@ -106,9 +106,9 @@ export function WorkflowSection() {
                       opacity: isActive ? 1 : 0,
                       paddingBottom: isActive ? "20px" : 0
                     }}
-                    className="overflow-hidden px-2 -mx-2"
+                    className="overflow-hidden"
                   >
-                    <p className="max-w-[48ch] text-[15px] leading-[1.6] text-muted-foreground pl-12">
+                    <p className="max-w-[48ch] pl-12 text-[15px] leading-[1.6] text-muted-foreground">
                       {agent.description}
                     </p>
                   </motion.div>
