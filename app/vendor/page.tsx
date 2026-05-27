@@ -477,7 +477,7 @@ export default function VendorDashboard() {
  <tr key={p.id} className="hover:bg-card/30 transition-colors">
  <td className="py-3 font-semibold text-foreground">{p.name}</td>
  <td className="py-3 text-center font-mono">{p.stock} units</td>
- <td className="py-3 text-center font-mono text-accent">{p.predictedDemand7Days} units</td>
+ <td className="py-3 text-center font-mono text-amber-600 font-semibold">{p.predictedDemand7Days} units</td>
  <td className="py-3 text-right">
  {p.needsRestock ? (
  <button

@@ -31,13 +31,13 @@ const agents = [
   },
 ];
 
-const accordionTransition = {
+const accordionTransition: any = {
   height: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] },
   opacity: { duration: 0.25, ease: "easeInOut" },
   paddingBottom: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] },
 };
 
-const cardVariants = {
+const cardVariants: any = {
   initial: { opacity: 0, y: 6 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
   exit: { opacity: 0, y: -6, transition: { duration: 0.15, ease: "easeIn" } },
@@ -51,7 +51,7 @@ export function WorkflowSection() {
   return (
     <section id="agents" className="relative border-t border-border px-4 py-24 sm:px-6 md:py-28 lg:px-10">
       <div className="mx-auto w-full max-w-[1280px]">
-        <div className="grid items-center gap-12 lg:grid-cols-[1fr_1fr] lg:gap-28">
+        <div className="grid items-start gap-12 lg:grid-cols-[1fr_1fr] lg:gap-28">
           <div className="max-w-[620px]">
             <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
               Platform
@@ -100,11 +100,11 @@ export function WorkflowSection() {
             </AnimatePresence>
           </div>
 
-          <div className="flex w-full max-w-[640px] flex-col gap-0 border-t border-border lg:justify-self-end lg:self-center">
+          <div className="flex w-full max-w-[640px] flex-col gap-0 border-t border-border lg:justify-self-end">
             {agents.map((agent) => {
               const isActive = activeAgent === agent.id;
               const Icon = agent.icon;
-              
+
               return (
                 <div key={agent.id} className="border-b border-border">
                   <button
@@ -112,17 +112,17 @@ export function WorkflowSection() {
                     onClick={() => setActiveAgent(isActive ? "" : agent.id)}
                     className="group flex w-full items-center gap-4 rounded-lg px-1 py-5 text-left transition-colors focus-visible:bg-secondary/50 focus-visible:outline-none"
                   >
-                    <span className={`flex size-8 shrink-0 items-center justify-center rounded-full ring-1 transition-all duration-300 ${isActive ? `bg-accent/10 text-accent ring-accent/20 scale-100 opacity-100` : "bg-secondary text-muted-foreground ring-border scale-90 opacity-70 group-hover:scale-100 group-hover:opacity-100 group-hover:text-foreground"}`}>
+                    <span className={`flex size-8 shrink-0 items-center justify-center rounded-full ring-1 transition-all duration-300 ${isActive ? "bg-accent/10 text-accent ring-accent/20 scale-100 opacity-100" : "bg-secondary text-muted-foreground ring-border scale-90 opacity-70 group-hover:scale-100 group-hover:opacity-100 group-hover:text-foreground"}`}>
                       <Icon className="size-4" />
                     </span>
                     <span className={`flex-1 text-[1.95rem] font-medium leading-tight tracking-tight transition-colors duration-300 ${isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground/80"}`}>
                       {agent.name}
                     </span>
                   </button>
-                  
+
                   <motion.div
                     initial={false}
-                    animate={{ 
+                    animate={{
                       height: isActive ? "auto" : 0,
                       opacity: isActive ? 1 : 0,
                       paddingBottom: isActive ? "20px" : 0
